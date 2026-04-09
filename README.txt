@@ -1,0 +1,3 @@
+Well, in short, this project is a personal idea for creating a bot in Telegram that will store what I dreamed about at night.
+The idea is that the user will send the main bot text and information about what he dreamed about at night, and the bot itself will write the information into a simple text file and sort it by date.
+And also, at the user's request, display the text he wrote earlier about what he dreamed about at night according to the date the file was created.
