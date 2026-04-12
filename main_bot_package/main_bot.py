@@ -3,10 +3,11 @@ from dotenv import load_dotenv
 import telebot
 from telebot_functions import create_keyboard_panel
 
-load_dotenv()
+load_dotenv()  #loading .env
 
 bot_TOKEN = os.getenv("BOT_TOKEN")
 BOT = telebot.TeleBot(bot_TOKEN)
+
 
 @BOT.message_handler(commands=['start'])
 def start(message):
@@ -28,6 +29,7 @@ def reaction_to_button(message):
             "Sorry, currently are only those commands into use👇",
             reply_markup=create_keyboard_panel()
         )
+
 
 
 

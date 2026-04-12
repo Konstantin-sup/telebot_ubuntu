@@ -1,10 +1,10 @@
 """Well this file was created for a case if the code should to repeat itself,
-so i kep my code clean. """
+so i kep my code clean."""
 
 from telebot import types
 def create_keyboard_panel():
     """Making a keyboard, for a '/start' command,
-    also will used be in cases if user sends voice, or video message(wrong format)
+    also will be used in cases if user sends voice, or video message(wrong format)
     or everything what causes error."""
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     file_btn = types.KeyboardButton("📁 My files")
@@ -17,5 +17,4 @@ def create_keyboard_panel():
     markup.add(file_btn, upload_btn)
     markup.add(del_btn, search_btn)
     markup.add(help_btn)
-
     return markup
