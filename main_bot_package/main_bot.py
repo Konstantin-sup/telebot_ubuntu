@@ -1,7 +1,6 @@
 import os
 from dotenv import load_dotenv
 import telebot
-from telebot import types
 from telebot_functions import create_keyboard_panel
 
 load_dotenv()
