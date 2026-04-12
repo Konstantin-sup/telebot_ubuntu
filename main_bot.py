@@ -8,12 +8,16 @@ load_dotenv()  #loading .env
 
 bot_TOKEN = os.getenv("BOT_TOKEN")
 BOT = telebot.TeleBot(bot_TOKEN)
+COMMANDS = ["📁 My files", "📤 Upload", "🗑️ Delete", "🔎 Search", "❓ Help"]
 
 
 def load_data(message):
     try:
+        if message.voice or message.photo:  #takes text only.
+            raise TypeError
+
         save_file(message)
-        BOT.send_message(message.chat.id, "Text was added successfully")
+        BOT.send_message(message.chat.id, "Text was saved successfully")
 
     except TypeError:
         BOT.send_message(message.chat.id, "You have to send a text, try again")
@@ -32,7 +36,7 @@ def start(message):
     )
 
 @BOT.message_handler(content_types=['photo', 'voice'])
-def handle_all(message):
+def handle_not_supported(message):
 
     BOT.send_message(
         message.chat.id,
@@ -43,8 +47,7 @@ def handle_all(message):
 
 @BOT.message_handler(func=lambda message: True)
 def reaction_to_button(message):
-    if message.text not in ["📁 My files", "📤 Upload",
-                            "🗑️ Delete", "🔎 Search", "❓ Help"]:
+    if message.text not in COMMANDS:
 
         BOT.send_message(
             message.chat.id,
@@ -60,6 +63,6 @@ def reaction_to_button(message):
 
 
 
-#BOT.polling()
+BOT.polling()
 
 

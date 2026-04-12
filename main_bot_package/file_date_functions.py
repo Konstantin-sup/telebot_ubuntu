@@ -24,9 +24,6 @@ now = datetime.now()
 
 
 def save_file(message):
-    if message.voice or message.photo:
-        raise TypeError
-
     text = message.text
     user_id = message.from_user.id  #better to make users_dir with theirs id(they are unique)
 
