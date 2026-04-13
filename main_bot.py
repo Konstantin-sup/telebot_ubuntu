@@ -26,7 +26,7 @@ def load_data(message):
 
 @BOT.message_handler(commands=['start'])
 def start(message):
-    BOT.send_message(message.chat.id, "Hello i am Sleep_bot\n")
+    BOT.send_message(message.chat.id, "Hello i am bot for working with text, and files\n")
     markup = create_keyboard_panel()
 
     BOT.send_message(
