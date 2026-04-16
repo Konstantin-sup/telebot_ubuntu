@@ -20,7 +20,10 @@ months = {
     "11": "November",
     "12": "December"
 }
-def get_time_data():
+
+data_path = os.getenv("PATH_TO_DATA")
+
+def get_time_data():  #returns always current time, needs on server where requests 24/7
     now = datetime.now()
 
     return {
@@ -29,12 +32,6 @@ def get_time_data():
         "filename": f"{now.day:02d}.{now.month:02d}.txt",
         "dir": f'{now.day:02d}.{now.month:02d}'
     }
-
-data_path = os.getenv("PATH_TO_DATA")
-#now = datetime.now()
-#CURRENT_FILENAME_txt = f'{now.day:02d}.{now.month:02d}.txt' #will be user multiple times
-#CURRENT_DATE_DIR = f'{now.day:02d}.{now.month:02d}'  #also will be used multiple times
-#CURRENT_MONTH = months[f"{now.month:02d}"]
 
 def file_count(dir_path):
     return len(os.listdir(dir_path))
