@@ -36,10 +36,11 @@ def get_time_data():  #returns always current time, needs on server where reques
 def file_count(dir_path):
     return len(os.listdir(dir_path))
 
-def save_file(message):
-    text = message.text
-    user_id = message.from_user.id  #better to make users_dir with theirs id(they are unique)
+def save_text(message, us_id):
+    text = message
+    user_id = us_id  #better to make users_dir with theirs id(they are unique)
     time = get_time_data()
+
     user_dir = os.path.join(data_path, str(user_id))
     os.makedirs(user_dir, exist_ok=True)  #makes dir for new user if not exists
     os.makedirs(os.path.join(user_dir, time.get("month")), exist_ok=True) #makes new month dir in users_dir if not exists
