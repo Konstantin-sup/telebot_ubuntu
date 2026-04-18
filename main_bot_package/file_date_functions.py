@@ -44,10 +44,9 @@ def save_file(us_id, text=None, file_bytes=None, file_name=None):
     os.makedirs(user_dir, exist_ok=True)  #makes dir for new user if not exists
     os.makedirs(os.path.join(user_dir, time.get("month")), exist_ok=True) #makes new month dir in users_dir if not exists
     path_current_date_dir = os.path.join(user_dir, time.get("month"), time.get("dir"))
+    new_f_path = os.path.join(user_dir, time.get("month"), time.get("filename"))
 
     if text:  #so now if user sends text to save as  more then once we create a dir for that
-        new_f_path = os.path.join(user_dir, time.get("month"), time.get("filename"))  #path to the new file
-
         if os.path.exists(new_f_path):  #checks if file is in root month dir
             os.makedirs(path_current_date_dir, exist_ok=True)
             shutil.move(new_f_path, path_current_date_dir)  #moves old file to new dir
@@ -56,7 +55,7 @@ def save_file(us_id, text=None, file_bytes=None, file_name=None):
             with open(save_path, "w", encoding='utf-8') as f_obj:
                 f_obj.write(text)  #writes user_text to the new file and saves it in dir with older ones
 
-        elif os.path.exists(path_current_date_dir):
+        elif os.path.exists(path_current_date_dir):  #if month dir exists saves file there
             file_counted = file_count(path_current_date_dir)  #counting files in the dir
             save_path = os.path.join(user_dir, time.get("month"), time.get("dir"), f'num({file_counted+1})_{time.get("filename")}')
             with open(save_path, "w", encoding='utf-8') as f_obj:
@@ -67,7 +66,11 @@ def save_file(us_id, text=None, file_bytes=None, file_name=None):
                 f_obj.write(text)
 
     if file_bytes:
-        os.makedirs(path_current_date_dir, exist_ok=True)
+        os.makedirs(path_current_date_dir, exist_ok=True)  #if first file of the day, making dir
+
+        if os.path.exists(new_f_path):
+            shutil.move(new_f_path, path_current_date_dir)  #moves .txt file to the new month dir
+
         os.chdir(path_current_date_dir)
         with open(file_name, "wb") as f_obj:
             f_obj.write(file_bytes)
