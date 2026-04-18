@@ -34,7 +34,9 @@ def get_time_data():  #returns always current time, needs on server where reques
     }
 
 def file_count(dir_path):
-    return len(os.listdir(dir_path))
+    files_list = os.listdir(dir_path)
+    count_txt = lambda lst: sum(1 for i in lst if i.endswith(".txt"))
+    return count_txt(files_list)
 
 
 def save_file(us_id, text=None, file_bytes=None, file_name=None):
@@ -77,13 +79,3 @@ def save_file(us_id, text=None, file_bytes=None, file_name=None):
         with open(file_name, "wb") as f_obj:
             f_obj.write(file_bytes)
 
-
-
-
-
-
-
-
-
-
-    
