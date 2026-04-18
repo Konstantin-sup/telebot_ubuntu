@@ -17,7 +17,7 @@ def load_data(message):
             raise TypeError
 
         elif message.text:
-            save_text(message.text, message.from_user.id)
+            save_text(message.from_user.id, text=message.text)
             BOT.send_message(message.chat.id, "Text was saved successfully")
 
        # elif message.document:
