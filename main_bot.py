@@ -40,30 +40,25 @@ def start(message):
 
     BOT.send_message(
        message.chat.id,
-       "Chose a command 👇",
+       "Chose a command ⤵️",
         reply_markup=markup
     )
 
-@BOT.message_handler(content_types=['photo', 'voice', 'document'])
+@BOT.message_handler(func=lambda message: message.text in COMMANDS)
+def reaction_to_button(message):
+    if message.text == "📤 Upload":
+        BOT.send_message(message.chat.id, "Good, so now send a text or file so i can save it📁")
+        BOT.register_next_step_handler(message, load_data)
+
+#filtration👇
+@BOT.message_handler(func=lambda message: True, content_types=['text', 'photo', 'voice', 'document', 'video_note'])
 def handle_not_supported(message):
     BOT.send_message(
         message.chat.id,
-        "No such option, use one of those👇",
+        "No such option, use one of those⤵️",
         reply_markup=create_keyboard_panel()
     )
 
-@BOT.message_handler(content_types=['text'])
-def reaction_to_button(message):
-    if message.text not in COMMANDS:
-        BOT.send_message(
-            message.chat.id,
-            "No such option, use one of those👇",
-            reply_markup=create_keyboard_panel()
-        )
-
-    if message.text == "📤 Upload":
-        BOT.send_message(message.chat.id, "Good, so now send a text or file so i can save it")
-        BOT.register_next_step_handler(message, load_data)
 
 
 
