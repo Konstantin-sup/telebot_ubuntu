@@ -21,7 +21,7 @@ def load_data(message):
             BOT.send_message(message.chat.id, "Text was saved successfully✅")
 
         elif message.document:
-            BOT.send_message(message.chat.id, "Got it, may take a lil time⌛ to save it")
+            BOT.send_message(message.chat.id, "Got it, may take a lil time⌛ to save it, please wait")
             file_id = message.document.file_id
             file_info = BOT.get_file(file_id)
             downloaded_bytes = BOT.download_file(file_info.file_path)
