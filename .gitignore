@@ -1,8 +1,13 @@
 .env
+
+#here i am writting my tasks for next day
 tasks.txt
+
 /.idea
 __pycache__
 .venv
+
+#dir with users file in it
 DATA
+
 alembic.ini
-alembic/env.py

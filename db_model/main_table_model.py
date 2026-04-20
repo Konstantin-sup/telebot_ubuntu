@@ -8,6 +8,7 @@ class MainTable(Base):
     user_id: Mapped[str] = mapped_column(VARCHAR(60), primary_key=True)
     file_id: Mapped[str] = mapped_column(VARCHAR(255), unique=True)
     file_path: Mapped[str] = mapped_column(VARCHAR(255))
+    tele_file_id: Mapped [str] = mapped_column(VARCHAR(255))
 
 
 
