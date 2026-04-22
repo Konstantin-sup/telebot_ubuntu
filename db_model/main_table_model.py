@@ -13,9 +13,9 @@ engine = create_engine(db_url, echo=True)
 class MainTable(Base):
     __tablename__ = "main_table"
 
-    user_id: Mapped[str] = mapped_column(VARCHAR(60), primary_key=True)
-    file_id: Mapped[str] = mapped_column(VARCHAR(255), unique=True)
-    file_path: Mapped[str] = mapped_column(VARCHAR(255))
+    user_id: Mapped[str] = mapped_column(VARCHAR(60))
+    file_id: Mapped[str] = mapped_column(VARCHAR(255), primary_key=True)
+    file_path: Mapped[str] = mapped_column(VARCHAR(255), unique=True)
     tele_file_id: Mapped [str] = mapped_column(VARCHAR(255))
 
 

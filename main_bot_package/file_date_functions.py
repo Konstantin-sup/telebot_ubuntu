@@ -3,6 +3,7 @@ import os
 import shutil
 from datetime import datetime
 from dotenv import load_dotenv
+from db_model.api_functions import create_request
 
 load_dotenv()  #loading .env
 
@@ -39,7 +40,7 @@ def file_count(dir_path):
     return count_txt(files_list)
 
 
-def save_file(us_id, text=None, file_bytes=None, file_name=None):
+def save_file(us_id, text=None, file_bytes=None, file_name=None, tele_file_id=None):
     user_id = us_id  #better to make users_dir with theirs id(they are unique)
     time = get_time_data()
     user_dir = os.path.join(data_path, str(user_id))
@@ -56,7 +57,11 @@ def save_file(us_id, text=None, file_bytes=None, file_name=None):
             file_counted = file_count(path_current_date_dir)  #counting files in the dir
             file_name = f'num({file_counted+1})_{time.get("filename")}'
             with open(file_name, "w", encoding='utf-8') as f_obj:
-                f_obj.write(text)  #writes user_text to the new file and saves it in dir with older ones
+                f_obj.write(text)   #writes user_text to the new file and saves it in dir with older ones
+
+            file_path = os.path.abspath(file_name)
+            json = {"user_id": str(user_id), "file_id": "3", "file_path": file_path, "tele_file_id": str(tele_file_id)}
+            create_request("/load_metadata", input_json=json)
 
         elif os.path.exists(path_current_date_dir):
             os.chdir(path_current_date_dir)  #if month dir exists saves file there
@@ -65,9 +70,17 @@ def save_file(us_id, text=None, file_bytes=None, file_name=None):
             with open(file_name, "w", encoding='utf-8') as f_obj:
                 f_obj.write(text)
 
+            file_path = os.path.abspath(file_name)
+            json = {"user_id": str(user_id), "file_id": "25", "file_path": file_path, "tele_file_id": str(tele_file_id)}
+            create_request("/load_metadata", input_json=json)
+
         else:
             with open(new_f_path, 'w', encoding='utf-8') as f_obj:
                 f_obj.write(text)
+
+            file_path = os.path.abspath(new_f_path)
+            json = {"user_id": str(user_id), "file_id": "26", "file_path": file_path, "tele_file_id": str(tele_file_id)}
+            create_request("/load_metadata", input_json=json)
 
     if file_bytes:
         os.makedirs(path_current_date_dir, exist_ok=True)  #if first file of the day, making dir
@@ -78,4 +91,8 @@ def save_file(us_id, text=None, file_bytes=None, file_name=None):
         os.chdir(path_current_date_dir)
         with open(file_name, "wb") as f_obj:
             f_obj.write(file_bytes)
+
+        file_path = os.path.abspath(file_name)
+        json = {"user_id": str(user_id), "file_id": "29", "file_path": file_path, "tele_file_id": str(tele_file_id)}
+        create_request("/load_metadata", input_json=json)
 

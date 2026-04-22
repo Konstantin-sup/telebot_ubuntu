@@ -25,7 +25,7 @@ def load_data(message):
             file_id = message.document.file_id
             file_info = BOT.get_file(file_id)
             downloaded_bytes = BOT.download_file(file_info.file_path)
-            save_file(message.from_user.id, file_bytes=downloaded_bytes, file_name=message.document.file_name)
+            save_file(message.from_user.id, tele_file_id=file_id, file_bytes=downloaded_bytes, file_name=message.document.file_name)
             BOT.send_message(message.chat.id, "File was saved successfully✅")
 
     except TypeError:
