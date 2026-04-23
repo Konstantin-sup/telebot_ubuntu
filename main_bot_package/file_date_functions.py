@@ -39,6 +39,9 @@ def file_count(dir_path):
     count_txt = lambda lst: sum(1 for i in lst if i.endswith(".txt"))
     return count_txt(files_list)
 
+def write_file(file_path, content, mode="w", encoding=None):
+    with open(file_path, mode, encoding=encoding) as f_object:
+        f_object.write(content)
 
 def save_file(us_id, text=None, file_bytes=None, file_name=None, tele_file_id=None):
     user_id = us_id  #better to make users_dir with theirs id(they are unique)
@@ -52,35 +55,30 @@ def save_file(us_id, text=None, file_bytes=None, file_name=None, tele_file_id=No
     if text:  #so now if user sends text to save as  more then once we create a dir for that
         if os.path.exists(new_f_path):  #checks if file is in root month dir
             os.makedirs(path_current_date_dir, exist_ok=True)
-            os.chdir(path_current_date_dir)
             shutil.move(new_f_path, path_current_date_dir)  #moves old file to new dir
             file_counted = file_count(path_current_date_dir)  #counting files in the dir
-            file_name = f'num({file_counted+1})_{time.get("filename")}'
-            with open(file_name, "w", encoding='utf-8') as f_obj:
-                f_obj.write(text)   #writes user_text to the new file and saves it in dir with older ones
-
+            file_name = os.path.join(path_current_date_dir, f'num({file_counted + 1})_{time.get("filename")}')
+            write_file(file_name, text, encoding="utf-8")
+            # sending test request👇
             file_path = os.path.abspath(file_name)
             json = {"user_id": str(user_id), "file_id": "3", "file_path": file_path, "tele_file_id": str(tele_file_id)}
             create_request("/load_metadata", input_json=json)
 
         elif os.path.exists(path_current_date_dir):
-            os.chdir(path_current_date_dir)  #if month dir exists saves file there
             file_counted = file_count(path_current_date_dir)  #counting files in the dir
-            file_name = f'num({file_counted+1})_{time.get("filename")}'
-            with open(file_name, "w", encoding='utf-8') as f_obj:
-                f_obj.write(text)
+            file_name = os.path.join(path_current_date_dir, f'num({file_counted+1})_{time.get("filename")}')
+            write_file(file_name, text, encoding="utf-8")
 
             file_path = os.path.abspath(file_name)
             json = {"user_id": str(user_id), "file_id": "25", "file_path": file_path, "tele_file_id": str(tele_file_id)}
             create_request("/load_metadata", input_json=json)
 
         else:
-            with open(new_f_path, 'w', encoding='utf-8') as f_obj:
-                f_obj.write(text)
-
+            write_file(file_name, text, encoding="utf-8")
             file_path = os.path.abspath(new_f_path)
             json = {"user_id": str(user_id), "file_id": "26", "file_path": file_path, "tele_file_id": str(tele_file_id)}
             create_request("/load_metadata", input_json=json)
+
 
     if file_bytes:
         os.makedirs(path_current_date_dir, exist_ok=True)  #if first file of the day, making dir
@@ -88,9 +86,8 @@ def save_file(us_id, text=None, file_bytes=None, file_name=None, tele_file_id=No
         if os.path.exists(new_f_path):
             shutil.move(new_f_path, path_current_date_dir)  #moves .txt file to the new month dir
 
-        os.chdir(path_current_date_dir)
-        with open(file_name, "wb") as f_obj:
-            f_obj.write(file_bytes)
+        byte_file_name = os.path.join(path_current_date_dir, file_name)
+        write_file(byte_file_name, file_bytes, mode="wb")
 
         file_path = os.path.abspath(file_name)
         json = {"user_id": str(user_id), "file_id": "29", "file_path": file_path, "tele_file_id": str(tele_file_id)}
