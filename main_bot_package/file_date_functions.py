@@ -3,7 +3,7 @@ import os
 import shutil
 from datetime import datetime
 from dotenv import load_dotenv
-from db_model.api_functions import create_request
+#from db_model.api_functions import create_request
 
 load_dotenv()  #loading .env
 
@@ -34,10 +34,18 @@ def get_time_data():  #returns always current time, needs on server where reques
         "dir": f'{now.day:02d}.{now.month:02d}'  #dirs also have date names
     }
 
+time = get_time_data()
+
 def file_count(dir_path):
     files_list = os.listdir(dir_path)
     count_txt = lambda lst: sum(1 for i in lst if i.endswith(".txt"))
     return count_txt(files_list)
+
+def save_txt(dir_path, text):
+    file_counted = file_count(dir_path)  # counting files in the dir
+    file_name = os.path.join(dir_path, f'num({file_counted + 1})_{time.get("filename")}')
+    write_file(file_name, text, encoding="utf-8")
+
 
 def write_file(file_path, content, mode="w", encoding=None):
     with open(file_path, mode, encoding=encoding) as f_object:
@@ -45,39 +53,32 @@ def write_file(file_path, content, mode="w", encoding=None):
 
 def save_file(us_id, text=None, file_bytes=None, file_name=None, tele_file_id=None):
     user_id = us_id  #better to make users_dir with theirs id(they are unique)
-    time = get_time_data()
     user_dir = os.path.join(data_path, str(user_id))
     os.makedirs(user_dir, exist_ok=True)  #makes dir for new user if not exists
     os.makedirs(os.path.join(user_dir, time.get("month")), exist_ok=True) #makes new month dir in users_dir if not exists
     path_current_date_dir = os.path.join(user_dir, time.get("month"), time.get("dir"))
-    new_f_path = os.path.join(user_dir, time.get("month"), time.get("filename"))
+    root_text_f_path = os.path.join(user_dir, time.get("month"), time.get("filename"))
 
-    if text:  #so now if user sends text to save as  more then once we create a dir for that
-        if os.path.exists(new_f_path):  #checks if file is in root month dir
+    if text:  #so now if user sends text to save as more then once we create a dir for that
+        if os.path.exists(root_text_f_path):  #checks if file is in root month dir
             os.makedirs(path_current_date_dir, exist_ok=True)
-            shutil.move(new_f_path, path_current_date_dir)  #moves old file to new dir
-            file_counted = file_count(path_current_date_dir)  #counting files in the dir
-            file_name = os.path.join(path_current_date_dir, f'num({file_counted + 1})_{time.get("filename")}')
-            write_file(file_name, text, encoding="utf-8")
+            shutil.move(root_text_f_path, path_current_date_dir)  #moves old file to new dir
+            save_txt(path_current_date_dir, text)
 
 
-        elif os.path.exists(path_current_date_dir):
-            file_counted = file_count(path_current_date_dir)  #counting files in the dir
-            file_name = os.path.join(path_current_date_dir, f'num({file_counted+1})_{time.get("filename")}')
-            write_file(file_name, text, encoding="utf-8")
-
+        elif os.path.exists(path_current_date_dir):  #if date_dir exists, saves file there(if more then 1 file in month_root_dir)
+            save_txt(path_current_date_dir, text)
 
 
         else:
-            write_file(file_name, text, encoding="utf-8")
-
+            write_file(root_text_f_path, text, encoding="utf-8")
 
 
     if file_bytes:
-        os.makedirs(path_current_date_dir, exist_ok=True)  #if first file of the day, making dir
+        os.makedirs(path_current_date_dir, exist_ok=True)  #makes date_dir if first file of the day
 
-        if os.path.exists(new_f_path):
-            shutil.move(new_f_path, path_current_date_dir)  #moves .txt file to the new month dir
+        if os.path.exists(root_text_f_path):
+            shutil.move(root_text_f_path, path_current_date_dir)  #moves .txt in date_dir if .txt in month_root_dir and user sends bytes in same date
 
         byte_file_name = os.path.join(path_current_date_dir, file_name)
         write_file(byte_file_name, file_bytes, mode="wb")
