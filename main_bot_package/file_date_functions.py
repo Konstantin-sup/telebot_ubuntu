@@ -59,25 +59,18 @@ def save_file(us_id, text=None, file_bytes=None, file_name=None, tele_file_id=No
             file_counted = file_count(path_current_date_dir)  #counting files in the dir
             file_name = os.path.join(path_current_date_dir, f'num({file_counted + 1})_{time.get("filename")}')
             write_file(file_name, text, encoding="utf-8")
-            # sending test request👇
-            file_path = os.path.abspath(file_name)
-            json = {"user_id": str(user_id), "file_id": "3", "file_path": file_path, "tele_file_id": str(tele_file_id)}
-            create_request("/load_metadata", input_json=json)
+
 
         elif os.path.exists(path_current_date_dir):
             file_counted = file_count(path_current_date_dir)  #counting files in the dir
             file_name = os.path.join(path_current_date_dir, f'num({file_counted+1})_{time.get("filename")}')
             write_file(file_name, text, encoding="utf-8")
 
-            file_path = os.path.abspath(file_name)
-            json = {"user_id": str(user_id), "file_id": "25", "file_path": file_path, "tele_file_id": str(tele_file_id)}
-            create_request("/load_metadata", input_json=json)
+
 
         else:
             write_file(file_name, text, encoding="utf-8")
-            file_path = os.path.abspath(new_f_path)
-            json = {"user_id": str(user_id), "file_id": "26", "file_path": file_path, "tele_file_id": str(tele_file_id)}
-            create_request("/load_metadata", input_json=json)
+
 
 
     if file_bytes:
@@ -89,7 +82,5 @@ def save_file(us_id, text=None, file_bytes=None, file_name=None, tele_file_id=No
         byte_file_name = os.path.join(path_current_date_dir, file_name)
         write_file(byte_file_name, file_bytes, mode="wb")
 
-        file_path = os.path.abspath(file_name)
-        json = {"user_id": str(user_id), "file_id": "29", "file_path": file_path, "tele_file_id": str(tele_file_id)}
-        create_request("/load_metadata", input_json=json)
+
 
