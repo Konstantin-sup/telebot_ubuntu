@@ -16,6 +16,7 @@ class MainTable(Base):
     user_id: Mapped[str] = mapped_column(VARCHAR(60))
     file_id: Mapped[int] = mapped_column(BIGINT, primary_key=True, autoincrement=True)
     file_path: Mapped[str] = mapped_column(VARCHAR(255), unique=True)
+    file_name: Mapped[str] = mapped_column(VARCHAR(60), unique=False)
     date_creation: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     month_dir: Mapped[str] = mapped_column(VARCHAR(60))
     tele_file_id: Mapped [str] = mapped_column(VARCHAR(255))
