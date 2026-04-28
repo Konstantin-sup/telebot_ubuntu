@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from db_model.api_functions import add_metadata
+from datetime import datetime
 app = FastAPI()
 
 class Metadata(BaseModel):
@@ -9,6 +10,7 @@ class Metadata(BaseModel):
     file_id: str
     file_path: str
     tele_file_id: str
+    month_dir: str
 
 
 @app.post('/load_metadata')

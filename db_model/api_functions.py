@@ -15,7 +15,8 @@ def create_request(endpoint, input_json=None):
 
 def add_metadata(metadata_class):
     index = MainTable(user_id=metadata_class.user_id, file_id=metadata_class.file_id,
-                      file_path=metadata_class.file_path, tele_file_id=metadata_class.tele_file_id)
+                      file_path=metadata_class.file_path, tele_file_id=metadata_class.tele_file_id,
+                      month_dir=metadata_class.month_dir)
 
     session.add(index)
     session.commit()
