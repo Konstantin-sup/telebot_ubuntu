@@ -45,13 +45,23 @@ def save_txt(dir_path, text):
     file_counted = file_count(dir_path)  # counting files in the dir
     file_name = os.path.join(dir_path, f'num({file_counted + 1})_{time.get("filename")}')
     write_file(file_name, text, encoding="utf-8")
+    return file_name
 
 
 def write_file(file_path, content, mode="w", encoding=None):
     with open(file_path, mode, encoding=encoding) as f_object:
         f_object.write(content)
 
-def save_file(us_id, text=None, file_bytes=None, file_name=None, tele_file_id=None):
+def create_metadata(user_id: str, file_path: str, month_dir: str, file_name: str, tele_file_id= str|None):
+    return {
+        "user_id": user_id,
+        "file_path": file_path,
+        "month_dir": month_dir,
+        "file_name": file_name,
+        "tele_file_id": tele_file_id
+    }
+
+def save_file(us_id, text=None, file_bytes=None, bytes_file_name=None, tele_file_id=None):
     user_id = us_id  #better to make users_dir with theirs id(they are unique)
     user_dir = os.path.join(data_path, str(user_id))
     os.makedirs(user_dir, exist_ok=True)  #makes dir for new user if not exists
@@ -63,16 +73,20 @@ def save_file(us_id, text=None, file_bytes=None, file_name=None, tele_file_id=No
         if os.path.exists(root_text_f_path):  #checks if file is in root month dir
             os.makedirs(path_current_date_dir, exist_ok=True)
             shutil.move(root_text_f_path, path_current_date_dir)  #moves old file to new dir
-            save_txt(path_current_date_dir, text)
+            file_path = save_txt(path_current_date_dir, text)
 
 
         elif os.path.exists(path_current_date_dir):  #if date_dir exists, saves file there(if more then 1 file in month_root_dir)
-            save_txt(path_current_date_dir, text)
+            file_path = save_txt(path_current_date_dir, text)
 
 
         else:
+            file_path = root_text_f_path
             write_file(root_text_f_path, text, encoding="utf-8")
 
+        file_name = time.get("filename")
+        meta_json = create_metadata(user_id=str(user_id), file_path=file_path, month_dir=time.get("month"), file_name=file_name, tele_file_id=tele_file_id)
+        create_request('/load_metadata', input_json=meta_json)
 
 
     if file_bytes:
@@ -81,8 +95,14 @@ def save_file(us_id, text=None, file_bytes=None, file_name=None, tele_file_id=No
         if os.path.exists(root_text_f_path):
             shutil.move(root_text_f_path, path_current_date_dir)  #moves .txt in date_dir if .txt in month_root_dir and user sends bytes in same date
 
-        byte_file_name = os.path.join(path_current_date_dir, file_name)
-        write_file(byte_file_name, file_bytes, mode="wb")
+        file_path = os.path.join(path_current_date_dir, bytes_file_name)
+        write_file(file_path, file_bytes, mode="wb")
+
+        meta_json = create_metadata(user_id=str(user_id), file_path=file_path, month_dir=time.get("month"), file_name=bytes_file_name, tele_file_id=tele_file_id)
+        create_request('/load_metadata', input_json=meta_json)
+
+
+
 
 
 
