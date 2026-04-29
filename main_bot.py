@@ -32,6 +32,18 @@ def load_data(message):
         BOT.send_message(message.chat.id, "Currently are only text and documents allowed, try again")
         BOT.register_next_step_handler(message, load_data)
 
+    except FileExistsError:
+        BOT.send_message(
+            message.chat.id,
+            "You have already send this file today",
+            reply_markup=create_keyboard_panel()
+        )
+
+    except Exception as e:
+        print(e)
+        BOT.send_message(message.chat.id, "Sorry something went wrong, try again later")
+
+
 
 @BOT.message_handler(commands=['start'])
 def start(message):
