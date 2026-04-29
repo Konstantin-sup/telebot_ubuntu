@@ -35,12 +35,8 @@ def get_time_data():  #returns always current time, needs on server where reques
         "dir": f'{now.day:02d}.{now.month:02d}'  #dirs also have date names
     }
 
-time = get_time_data()
-
 def txt_file_count(dir_path):
-    files_list = os.listdir(dir_path)
-    count_txt = lambda lst: sum(1 for i in lst if i.endswith(".txt"))
-    return count_txt(files_list)
+    return sum(1 for f in os.listdir(dir_path) if f.endswith(".txt"))
 
 def save_txt(dir_path, text):
     file_counted = txt_file_count(dir_path)  # counting files in the dir
@@ -65,6 +61,7 @@ def create_metadata(user_id: str, file_path: str, month_dir: str, file_name: str
 def save_file(us_id, text=None, file_bytes=None, bytes_file_name=None, tele_file_id=None):
     user_id = us_id  #better to make users_dir with theirs id(they are unique)
     user_dir = os.path.join(data_path, str(user_id))
+    time = get_time_data()
     os.makedirs(user_dir, exist_ok=True)  #makes dir for new user if not exists
     os.makedirs(os.path.join(user_dir, time.get("year"), time.get("month")), exist_ok=True) #makes new month dir in users_dir if not exists
     path_current_date_dir = os.path.join(user_dir, time.get("year"), time.get("month"), time.get("dir"))
