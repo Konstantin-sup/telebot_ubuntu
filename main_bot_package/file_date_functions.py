@@ -38,11 +38,11 @@ def get_time_data():  #returns always current time, needs on server where reques
 def txt_file_count(dir_path):
     return sum(1 for f in os.listdir(dir_path) if f.endswith(".txt"))
 
-def save_txt(dir_path, text):
+def save_txt(dir_path, text, time_json: dict):
     file_counted = txt_file_count(dir_path)  # counting files in the dir
-    text_file_path = os.path.join(dir_path, f'num({file_counted + 1})_{time.get("filename")}')
+    text_file_path = os.path.join(dir_path, f'num({file_counted + 1})_{time_json.get("filename")}')
     write_file(text_file_path, text, encoding="utf-8")
-    return text_file_path, f'num({file_counted + 1})_{time.get("filename")}' ##file_name
+    return text_file_path, f'num({file_counted + 1})_{time_json.get("filename")}' ##file_name
 
 
 def write_file(file_path, content, mode="w", encoding=None):
@@ -71,11 +71,11 @@ def save_file(us_id, text=None, file_bytes=None, bytes_file_name=None, tele_file
         if os.path.exists(root_text_f_path):  #checks if file is in root month dir
             os.makedirs(path_current_date_dir, exist_ok=True)
             shutil.move(root_text_f_path, path_current_date_dir)  #moves old file to new dir
-            file_path, file_name = save_txt(path_current_date_dir, text)
+            file_path, file_name = save_txt(path_current_date_dir, text, time_json=time)
 
 
         elif os.path.exists(path_current_date_dir):  #if date_dir exists, saves file there(if more then 1 file in month_root_dir)
-            file_path, file_name = save_txt(path_current_date_dir, text)
+            file_path, file_name = save_txt(path_current_date_dir, text, time_json=time)
 
 
         else:
