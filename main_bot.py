@@ -21,6 +21,12 @@ def load_data(message):
             BOT.send_message(message.chat.id, "Text was saved successfully✅")
 
         elif message.document:
+            file_size = message.document.file_size
+
+            if file_size > 15 * 1024 * 1024:  ## 15 MB
+                BOT.send_message(message.chat.id, "File is too heavy, max(15mb)")
+                return
+
             BOT.send_message(message.chat.id, "Got it, may take a lil time⌛ to save it, please wait")
             file_id = message.document.file_id
             file_info = BOT.get_file(file_id)
@@ -29,7 +35,7 @@ def load_data(message):
             BOT.send_message(message.chat.id, "File was saved successfully✅")
 
     except TypeError:
-        BOT.send_message(message.chat.id, "Currently are only text and documents allowed, try again")
+        BOT.send_message(message.chat.id, "Currently are only text and files allowed, try again")
         BOT.register_next_step_handler(message, load_data)
 
     except FileExistsError:
@@ -59,7 +65,7 @@ def start(message):
 @BOT.message_handler(func=lambda message: message.text in COMMANDS)
 def reaction_to_button(message):
     if message.text == "📤 Upload":
-        BOT.send_message(message.chat.id, "Good, so now send a text or file so i can save it📁")
+        BOT.send_message(message.chat.id, "So now send a text or file so i can save it📁")
         BOT.register_next_step_handler(message, load_data)
 
     elif message.text == "📁 My files":
