@@ -12,9 +12,15 @@ def create_keyboard_panel():
     del_btn = types.KeyboardButton("🗑️ Delete")
     search_btn = types.KeyboardButton("🔎 Search")
     help_btn = types.KeyboardButton("❓ Help")
-
-
     markup.add(file_btn, upload_btn)
     markup.add(del_btn, search_btn)
     markup.add(help_btn)
     return markup
+
+def inline_buttons(dirs_list: list[str]):
+    keyboard = types.InlineKeyboardMarkup()
+    for data in dirs_list:
+        keyboard.add(types.InlineKeyboardButton(f"📁 {data}", callback_data=data))
+
+    return keyboard
+

@@ -38,6 +38,14 @@ def get_time_data():  #returns always current time, needs on server where reques
 def txt_file_count(dir_path):
     return sum(1 for f in os.listdir(dir_path) if f.endswith(".txt"))
 
+def show_month_dirs(user_id):  #using in Inline_buttons
+    if not os.path.exists(os.path.join(data_path, str(user_id))):
+        raise FileNotFoundError
+
+    month_dir_path = os.path.join(data_path, str(user_id), get_time_data()["year"])
+    return os.listdir(month_dir_path)
+
+
 def save_txt(dir_path, text, time_json: dict):
     file_counted = txt_file_count(dir_path)  # counting files in the dir
     text_file_path = os.path.join(dir_path, f'num({file_counted + 1})_{time_json.get("filename")}')

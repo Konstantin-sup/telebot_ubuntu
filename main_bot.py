@@ -1,8 +1,8 @@
 import os
 from dotenv import load_dotenv
 import telebot
-from main_bot_package.telebot_functions import create_keyboard_panel
-from main_bot_package.file_date_functions import save_file
+from main_bot_package.telebot_functions import create_keyboard_panel, inline_buttons
+from main_bot_package.file_date_functions import save_file, show_month_dirs
 
 load_dotenv()  #loading .env
 
@@ -61,6 +61,22 @@ def reaction_to_button(message):
     if message.text == "📤 Upload":
         BOT.send_message(message.chat.id, "Good, so now send a text or file so i can save it📁")
         BOT.register_next_step_handler(message, load_data)
+
+    elif message.text == "📁 My files":
+        try:
+            dir_list = show_month_dirs(message.from_user.id)
+            inline = inline_buttons(dir_list)
+
+            BOT.send_message(
+                message.chat.id,
+                "Here are yours data⤵️",
+                reply_markup=inline
+            )
+
+        except FileNotFoundError:
+            BOT.send_message(message.chat.id,
+                             "You haven't send any file yet",)
+
 
 #filtration👇
 @BOT.message_handler(func=lambda message: True, content_types=['text', 'photo', 'voice', 'document', 'video_note'])
