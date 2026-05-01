@@ -105,6 +105,10 @@ def save_file(us_id, text=None, file_bytes=None, bytes_file_name=None, tele_file
         elif os.path.exists(root_text_f_path):
             shutil.move(root_text_f_path, path_current_date_dir)  #moves .txt in date_dir if .txt in month_root_dir and user sends bytes in same date
 
+        if len(bytes_file_name)>15:
+            f_name, f_format = os.path.splitext(bytes_file_name)
+            bytes_file_name = bytes_file_name[:15] + f_format
+
         file_path = os.path.join(path_current_date_dir, bytes_file_name)
         write_file(file_path, file_bytes, mode="wb")
 
