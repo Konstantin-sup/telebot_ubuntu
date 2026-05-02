@@ -14,8 +14,8 @@ class Metadata(BaseModel):
 
 @app.post('/load_metadata')
 def load_file_data(file_data: Metadata):
-    add_metadata(file_data)
+    file_id, file_path = add_metadata(file_data)
 
-    return JSONResponse(status_code=200, content={"message": "Metadata was saved successfully"})
+    return JSONResponse(status_code=200, content={"file_id": file_id, "file_path": file_path})
 
 

@@ -20,3 +20,6 @@ def add_metadata(metadata_class):
 
     session.add(index)
     session.commit()
+    session.refresh(index)
+
+    return index.file_id, index.file_path

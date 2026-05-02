@@ -93,7 +93,7 @@ def save_file(us_id, text=None, file_bytes=None, bytes_file_name=None, tele_file
 
 
         meta_json = create_metadata(user_id=str(user_id), file_path=file_path, month_dir=time.get("month"), file_name=file_name, tele_file_id=tele_file_id)
-        create_request('/load_metadata', input_json=meta_json)
+        file_data, status = create_request('/load_metadata', input_json=meta_json)
 
 
     if file_bytes:
@@ -113,10 +113,7 @@ def save_file(us_id, text=None, file_bytes=None, bytes_file_name=None, tele_file
         write_file(file_path, file_bytes, mode="wb")
 
         meta_json = create_metadata(user_id=str(user_id), file_path=file_path, month_dir=time.get("month"), file_name=bytes_file_name, tele_file_id=tele_file_id)
-        create_request('/load_metadata', input_json=meta_json)
-
-
-
+        file_data, status = create_request('/load_metadata', input_json=meta_json)
 
 
 
