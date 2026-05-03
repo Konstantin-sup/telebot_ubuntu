@@ -62,6 +62,15 @@ def start(message):
         reply_markup=markup
     )
 
+@BOT.callback_query_handler(func=lambda call: call.data.startswith("month_dir:"))
+def handle_month(call):
+    BOT.answer_callback_query(call.id)
+
+    month = call.data.split(":")[1]
+
+    BOT.send_message(call.message.chat.id, f"{month} was selected")
+
+
 @BOT.message_handler(func=lambda message: message.text in COMMANDS)
 def reaction_to_button(message):
     if message.text == "📤 Upload":
@@ -70,8 +79,8 @@ def reaction_to_button(message):
 
     elif message.text == "📁 My files":
         try:
-            dir_list = show_month_dirs(message.from_user.id)
-            inline = inline_buttons(dir_list)
+            months_dir_path = show_month_dirs(message.from_user.id)  #returns path to the months_dirs
+            inline = inline_buttons(dir_path=months_dir_path, month_dirs=True)
 
             BOT.send_message(
                 message.chat.id,
@@ -81,7 +90,8 @@ def reaction_to_button(message):
 
         except FileNotFoundError:
             BOT.send_message(message.chat.id,
-                             "You haven't send any file yet",)
+                             "You haven't send any file yet")
+
 
 
 #filtration👇
