@@ -2,13 +2,13 @@ import os
 from dotenv import load_dotenv
 import telebot
 from main_bot_package.telebot_functions import create_keyboard_panel, inline_buttons
-from main_bot_package.file_date_functions import save_file, show_month_dirs
+from main_bot_package.file_date_functions import save_file, show_month_dirs, create_month_path
 
 load_dotenv()  #loading .env
 
 bot_TOKEN = os.getenv("BOT_TOKEN")
 BOT = telebot.TeleBot(bot_TOKEN)
-COMMANDS = ["📁 My files", "📤 Upload", "🗑️ Delete", "🔎 Search", "❓ Help"]
+COMMANDS = ["📁 My files", "📤 Upload", "🗑️ Delete", "❓ Help"]
 
 
 def load_data(message):
@@ -47,8 +47,7 @@ def load_data(message):
 
     except Exception as e:
         print(e)
-        BOT.send_message(message.chat.id, "Sorry something went wrong, try again later")
-
+        BOT.send_message(message.chat.id, "🟥 Sorry something went wrong, try again later")
 
 
 @BOT.message_handler(commands=['start'])
@@ -67,8 +66,14 @@ def handle_month(call):
     BOT.answer_callback_query(call.id)
 
     month = call.data.split(":")[1]
+    month_dir_path = create_month_path(month=month, user_id=call.from_user.id)
+    inline = inline_buttons(dir_path=month_dir_path)
 
-    BOT.send_message(call.message.chat.id, f"{month} was selected")
+    BOT.send_message(
+        call.message.chat.id,
+        f"Here is your data from 📁{month} directory⤵️",
+        reply_markup=inline
+    )
 
 
 @BOT.message_handler(func=lambda message: message.text in COMMANDS)

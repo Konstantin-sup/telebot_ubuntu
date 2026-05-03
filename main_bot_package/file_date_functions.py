@@ -35,6 +35,10 @@ def get_time_data():  #returns always current time, needs on server where reques
         "dir": f'{now.day:02d}.{now.month:02d}'  #dirs also have date names
     }
 
+def create_month_path(month: str, user_id: int) -> str:
+    month_path = os.path.join(data_path, str(user_id), get_time_data()["year"], month)
+    return month_path
+
 def txt_file_count(dir_path) -> int:
     return sum(1 for f in os.listdir(dir_path) if f.endswith(".txt"))
 
