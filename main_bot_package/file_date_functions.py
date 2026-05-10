@@ -23,6 +23,7 @@ months = {
     "12": "December"
 }
 
+
 data_path = os.getenv("PATH_TO_DATA")
 
 def get_time_data():  #returns always current time, needs on server where requests 24/7
