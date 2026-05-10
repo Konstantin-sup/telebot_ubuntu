@@ -1,9 +1,9 @@
 """This file was created specially for saving, searching, or deleting files"""
 import os
-import shutil
+import uuid
 from datetime import datetime
 from dotenv import load_dotenv
-from db_model.api_functions import create_request
+#from db_model.api_functions import create_request
 
 
 load_dotenv()  #loading .env
@@ -77,47 +77,51 @@ def save_file(us_id, text=None, file_bytes=None, bytes_file_name=None, tele_file
     os.makedirs(user_dir, exist_ok=True)  #makes dir for new user if not exists
     os.makedirs(os.path.join(user_dir, time.get("year"), time.get("month")), exist_ok=True) #makes new month dir in users_dir if not exists
     path_current_date_dir = os.path.join(user_dir, time.get("year"), time.get("month"), time.get("dir"))
-    root_text_f_path = os.path.join(user_dir, time.get("year"), time.get("month"), time.get("filename"))
 
-    if text:  #so now if user sends text to save as more then once we create a dir for that
-        if os.path.exists(root_text_f_path):  #checks if file is in root month dir
-            os.makedirs(path_current_date_dir, exist_ok=True)
-            shutil.move(root_text_f_path, path_current_date_dir)  #moves old file to new dir
-            file_path, file_name = save_txt(path_current_date_dir, text, time_json=time)
+    if text:  # so now if user sends text to save as more then once we create a dir for that
+        os.makedirs(path_current_date_dir, exist_ok=True)
+        file_path, file_name = save_txt(path_current_date_dir, text, time_json=time)
+        return file_name
 
+       # meta_json = create_metadata(
+           # user_id=str(user_id),
+            #file_path=file_path,
+            #month_dir=time.get("month"),
+           # file_name=file_name,
+            #tele_file_id=tele_file_id
+       # )
 
-        elif os.path.exists(path_current_date_dir):  #if date_dir exists, saves file there(if more then 1 file in month_root_dir)
-            file_path, file_name = save_txt(path_current_date_dir, text, time_json=time)
-
-
-        else:
-            file_path = root_text_f_path
-            write_file(root_text_f_path, text, encoding="utf-8")
-            file_name = time.get("filename")
-
-
-        meta_json = create_metadata(user_id=str(user_id), file_path=file_path, month_dir=time.get("month"), file_name=file_name, tele_file_id=tele_file_id)
-        file_data, status = create_request('/load_metadata', input_json=meta_json)
-
+       # file_data, status = create_request(
+           # '/load_metadata',
+           # input_json=meta_json
+       # )
 
     if file_bytes:
-        os.makedirs(path_current_date_dir, exist_ok=True)  #makes date_dir if first file of the day
+        os.makedirs(path_current_date_dir, exist_ok=True)  # makes date_dir if first file of the day
 
         if os.path.exists(os.path.join(path_current_date_dir, bytes_file_name)):
             raise FileExistsError
 
-        elif os.path.exists(root_text_f_path):
-            shutil.move(root_text_f_path, path_current_date_dir)  #moves .txt in date_dir if .txt in month_root_dir and user sends bytes in same date
-
-        elif len(bytes_file_name)>15:
+        elif len(bytes_file_name) > 15:
             f_name, f_format = os.path.splitext(bytes_file_name)
-            bytes_file_name = bytes_file_name[:15] + f_format
+            bytes_file_name = f"{f_name}_{uuid.uuid4().hex[:3]}{f_format}"
 
         file_path = os.path.join(path_current_date_dir, bytes_file_name)
         write_file(file_path, file_bytes, mode="wb")
+        return bytes_file_name
 
-        meta_json = create_metadata(user_id=str(user_id), file_path=file_path, month_dir=time.get("month"), file_name=bytes_file_name, tele_file_id=tele_file_id)
-        file_data, status = create_request('/load_metadata', input_json=meta_json)
+        #meta_json = create_metadata(
+          #  user_id=str(user_id),
+          #  file_path=file_path,
+           # month_dir=time.get("month"),
+           # file_name=bytes_file_name,
+            #tele_file_id=tele_file_id
+       # )
+
+       # file_data, status = create_request(
+         #   '/load_metadata',
+         #   input_json=meta_json
+       # )
 
 
 

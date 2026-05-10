@@ -17,8 +17,8 @@ def load_data(message):
             raise TypeError
 
         elif message.text:
-            save_file(message.from_user.id, text=message.text)
-            BOT.send_message(message.chat.id, "Text was saved successfully✅")
+            fl_name = save_file(message.from_user.id, text=message.text)
+            BOT.send_message(message.chat.id, f"Text was saved successfully✅ as '{fl_name}'")
 
         elif message.document:
             file_size = message.document.file_size
@@ -31,8 +31,8 @@ def load_data(message):
             file_id = message.document.file_id
             file_info = BOT.get_file(file_id)
             downloaded_bytes = BOT.download_file(file_info.file_path)
-            save_file(message.from_user.id, tele_file_id=file_id, file_bytes=downloaded_bytes, bytes_file_name=message.document.file_name)
-            BOT.send_message(message.chat.id, "File was saved successfully✅")
+            fl_name = save_file(message.from_user.id, tele_file_id=file_id, file_bytes=downloaded_bytes, bytes_file_name=message.document.file_name)
+            BOT.send_message(message.chat.id, f"File was saved successfully✅ as '{fl_name}'")
 
     except TypeError:
         BOT.send_message(message.chat.id, "Currently are only text and files allowed, try again")
@@ -79,6 +79,8 @@ def handle_month(call):
 @BOT.message_handler(func=lambda message: message.text in COMMANDS)
 def reaction_to_button(message):
     if message.text == "📤 Upload":
+        BOT.send_message(message.chat.id,
+                         "❗Please note that if you send a file with a long name (more than 15 characters), its name will be truncated.")
         BOT.send_message(message.chat.id, "So now send a text or file so i can save it📁")
         BOT.register_next_step_handler(message, load_data)
 
