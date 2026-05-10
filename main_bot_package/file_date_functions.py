@@ -5,6 +5,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from db_model.api_functions import create_request
 
+
 load_dotenv()  #loading .env
 
 months = {
