@@ -20,6 +20,7 @@ class MainTable(Base):
     date_creation: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     month_dir: Mapped[str] = mapped_column(VARCHAR(60))
     tele_file_id: Mapped [str] = mapped_column(VARCHAR(255), nullable=True)
+    date_dir: Mapped[str] = mapped_column(VARCHAR(255), nullable=False, unique=False)
 
 
 
