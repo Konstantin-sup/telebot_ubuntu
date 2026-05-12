@@ -95,7 +95,7 @@ def save_file(us_id, text=None, file_bytes=None, bytes_file_name=None, tele_file
         #     '/load_metadata',
         #     input_json=meta_json)
         #
-        # return file_name
+        return file_name
 
 
     if file_bytes:
