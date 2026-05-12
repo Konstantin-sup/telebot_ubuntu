@@ -3,7 +3,7 @@ import os
 import uuid
 from datetime import datetime
 from dotenv import load_dotenv
-#from db_model.api_functions import create_request
+from db_model.api_functions import create_request
 
 
 load_dotenv()  #loading .env
@@ -61,13 +61,14 @@ def write_file(file_path, content, mode="w", encoding=None):
     with open(file_path, mode, encoding=encoding) as f_object:
         f_object.write(content)
 
-def create_metadata(user_id: str, file_path: str, month_dir: str, file_name: str, tele_file_id= str|None):
+def create_metadata(user_id: str, file_path: str, month_dir: str, file_name: str, date_dir: str, tele_file_id= str|None):
     return {
         "user_id": user_id,
         "file_path": file_path,
         "month_dir": month_dir,
         "file_name": file_name,
-        "tele_file_id": tele_file_id
+        "tele_file_id": tele_file_id,
+        "date_dir": date_dir
     }
 
 def save_file(us_id, text=None, file_bytes=None, bytes_file_name=None, tele_file_id=None):
@@ -81,20 +82,21 @@ def save_file(us_id, text=None, file_bytes=None, bytes_file_name=None, tele_file
     if text:  # so now if user sends text to save as more then once we create a dir for that
         os.makedirs(path_current_date_dir, exist_ok=True)
         file_path, file_name = save_txt(path_current_date_dir, text, time_json=time)
-        return file_name
 
-       # meta_json = create_metadata(
-           # user_id=str(user_id),
-            #file_path=file_path,
-            #month_dir=time.get("month"),
-           # file_name=file_name,
-            #tele_file_id=tele_file_id
-       # )
+        # meta_json = create_metadata(
+        #     user_id=str(user_id),
+        #     file_path=file_path,
+        #     month_dir=time.get("month"),
+        #     file_name=file_name,
+        #     tele_file_id=tele_file_id,
+        #     date_dir=time.get("dir"))
+        #
+        # file_data, status = create_request(
+        #     '/load_metadata',
+        #     input_json=meta_json)
+        #
+        # return file_name
 
-       # file_data, status = create_request(
-           # '/load_metadata',
-           # input_json=meta_json
-       # )
 
     if file_bytes:
         os.makedirs(path_current_date_dir, exist_ok=True)  # makes date_dir if first file of the day
@@ -104,24 +106,23 @@ def save_file(us_id, text=None, file_bytes=None, bytes_file_name=None, tele_file
 
         elif len(bytes_file_name) > 15:
             f_name, f_format = os.path.splitext(bytes_file_name)
-            bytes_file_name = f"{f_name}_{uuid.uuid4().hex[:3]}{f_format}"
+            bytes_file_name = f"{f_name[:10]}_{uuid.uuid4().hex[:3]}{f_format}"
 
         file_path = os.path.join(path_current_date_dir, bytes_file_name)
         write_file(file_path, file_bytes, mode="wb")
+
+        # meta_json = create_metadata(
+        #     user_id=str(user_id),
+        #     file_path=file_path,
+        #     month_dir=time.get("month"),
+        #     file_name=bytes_file_name,
+        #     tele_file_id=tele_file_id,
+        #     date_dir=time.get("dir"))
+        #
+        # file_data, status = create_request(
+        #     '/load_metadata',
+        #     input_json=meta_json)
+
         return bytes_file_name
-
-        #meta_json = create_metadata(
-          #  user_id=str(user_id),
-          #  file_path=file_path,
-           # month_dir=time.get("month"),
-           # file_name=bytes_file_name,
-            #tele_file_id=tele_file_id
-       # )
-
-       # file_data, status = create_request(
-         #   '/load_metadata',
-         #   input_json=meta_json
-       # )
-
 
 

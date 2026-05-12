@@ -10,6 +10,7 @@ class Metadata(BaseModel):
     tele_file_id: str | None = None  #user can also send text(only when user sends doc)
     month_dir: str
     file_name: str
+    date_dir: str
 
 
 @app.post('/load_metadata')
