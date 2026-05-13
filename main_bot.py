@@ -112,9 +112,6 @@ def handle_not_supported(message):
 
 
 
-
-
-
 BOT.polling()
 
 

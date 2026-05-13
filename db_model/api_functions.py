@@ -1,5 +1,6 @@
 from db_model.main_table_model import engine, MainTable
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import select
 import requests
 
 
@@ -23,3 +24,16 @@ def add_metadata(metadata_class):
     session.refresh(index)
 
     return index.file_id, index.file_path
+
+
+def get_date_dir_files(user_id: str, date_dir: str):
+    result = session.execute(
+        select(MainTable)
+        .where(
+            MainTable.user_id == user_id,
+            MainTable.date_dir == date_dir
+        )
+        .order_by(MainTable.date_creation.asc())
+    ).scalars().all()
+
+    return result
