@@ -12,9 +12,9 @@ class Metadata(BaseModel):
     file_name: str
     date_dir: str
 
-class SelectFiles(BaseModel):
-    user_id: str
-    date_dir: str
+# class SelectFiles(BaseModel):
+#     user_id: str
+#     date_dir: str
 
 
 @app.post('/load_metadata')
@@ -30,6 +30,7 @@ def select_files(user_id: str, date_dir: str):
     result = get_date_dir_files(user_id=user_id, date_dir=date_dir)
     return result  #JSONRESPONSE later
 
+#uvicorn fastapi_db.main_api:app --reload
 
 
 

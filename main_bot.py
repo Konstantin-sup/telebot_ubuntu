@@ -1,8 +1,9 @@
 import os
 from dotenv import load_dotenv
 import telebot
-from main_bot_package.telebot_functions import create_keyboard_panel, inline_buttons
+from main_bot_package.telebot_functions import create_keyboard_panel, inline_buttons, send_inline_buttons
 from main_bot_package.file_date_functions import save_file, show_month_dirs, create_month_path
+from db_model.api_functions import create_request
 
 load_dotenv()  #loading .env
 
@@ -67,12 +68,29 @@ def handle_month(call):
 
     month = call.data.split(":")[1]
     month_dir_path = create_month_path(month=month, user_id=call.from_user.id)
-    inline = inline_buttons(dir_path=month_dir_path)
+    inline = inline_buttons(dir_path=month_dir_path, call_back="date_dir")
 
     BOT.send_message(
         call.message.chat.id,
         f"Here is your data from 📁{month} directory⤵️",
         reply_markup=inline
+    )
+
+
+@BOT.callback_query_handler(func=lambda call: call.data.startswith("date_dir:"))
+def handle_month(call):
+    BOT.answer_callback_query(call.id)
+
+    date_dir = call.data.split(":")[1]
+    user_id = call.from_user.id
+    input_json = {"user_id": user_id, "date_dir": date_dir}
+    date_dir_files_list, status = create_request(endpoint='/date_dir_files', input_json=input_json)
+
+    date_dir_files_fresh = send_inline_buttons(date_dir_files_list)
+    BOT.send_message(
+        call.message.chat.id,
+        f"Here are your files from 📁{date_dir} directory⤵️",
+        reply_markup=date_dir_files_fresh
     )
 
 
@@ -87,7 +105,7 @@ def reaction_to_button(message):
     elif message.text == "📁 My files":
         try:
             months_dir_path = show_month_dirs(message.from_user.id)  #returns path to the months_dirs
-            inline = inline_buttons(dir_path=months_dir_path, month_dirs=True)
+            inline = inline_buttons(dir_path=months_dir_path, call_back="month_dir")
 
             BOT.send_message(
                 message.chat.id,

@@ -1,9 +1,9 @@
 """Well this file was created for a case if the code should to repeat itself,
 so i kep my code clean."""
 import os
-
 from telebot import types
 from os import scandir
+
 def create_keyboard_panel():
     """Making a keyboard, for a '/start' command,
     also will be used in cases if user sends voice, or video message(wrong format)
@@ -17,26 +17,32 @@ def create_keyboard_panel():
     markup.add(del_btn, help_btn)
     return markup
 
-def inline_buttons(dir_path: str, month_dirs: bool = False):
+def inline_buttons(dir_path: str, call_back: str):
     keyboard = types.InlineKeyboardMarkup()
-    if month_dirs:
+
+    if call_back == "month_dir":
         for month_dir in os.listdir(dir_path):
             call_back = f"month_dir:{month_dir}"
             keyboard.add(types.InlineKeyboardButton(f"Show: 📁 {month_dir}", callback_data=call_back))
 
         return keyboard
 
+    elif call_back == "date_dir":
+        with os.scandir(dir_path) as entries:
+            for entry in entries:
+                if entry.is_dir():
+                    call_back = f"date_dir:{entry.name}"
+                    keyboard.add(types.InlineKeyboardButton(f"Show me:📁 {entry.name}", callback_data=call_back))
 
-    with os.scandir(dir_path) as entries:
-        for entry in entries:
-            if entry.is_dir():
-                call_back = f"data_dir:{entry.name}"
-                keyboard.add(types.InlineKeyboardButton(f"Show me:📁 {entry.name}", callback_data=call_back))
+        return keyboard
 
 
-            else:
-                call_back = f"send:{entry.name}"
-                keyboard.add(types.InlineKeyboardButton(f"Send me:📄 {entry.name}", callback_data=call_back))
+def send_inline_buttons(dict_files: list[dict]):
+    keyboard = types.InlineKeyboardMarkup()
+    for data in dict_files:
+        f_name = data.get("file_name")
+        f_id = data.get("file_id")
+        call_back = f"Send me:{f_id}"
+        keyboard.add(types.InlineKeyboardButton(f"Send me:📄 {f_name}", callback_data=call_back))
 
     return keyboard
-
