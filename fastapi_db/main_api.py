@@ -12,34 +12,31 @@ class Metadata(BaseModel):
     file_name: str
     date_dir: str
 
-# class SelectFiles(BaseModel):
-#     user_id: str
-#     date_dir: str
-
 
 @app.post('/load_metadata')
 def load_file_data(file_data: Metadata):
     file_id, file_path = add_metadata(file_data)
 
-    return JSONResponse(status_code=200, content={"file_id": file_id, "file_path": file_path})
+    return JSONResponse(status_code=201, content={"file_id": file_id, "file_path": file_path})
 
 
 
 @app.get('/date_dir_files')
 def select_files(user_id: str, date_dir: str):
-
     result = get_date_dir_files(user_id=user_id, date_dir=date_dir)
-    return result  #JSONRESPONSE later
+
+    return JSONResponse(status_code=200, content={"date_dir_files": row_to_dict(result, long_list=True)})
 
 
 @app.get('/file_data')
 def send_file_data(user_id: str, file_id: int):
     file_data = get_file_data(user_id=user_id, file_id=file_id)
 
-    return JSONResponse(status_code=200, content={"file_data": row_to_dict(file_data)})
+    return JSONResponse(status_code=200, content={"file_data": row_to_dict(file_data, long_list=False)})
+
 
 #uvicorn fastapi_db.main_api:app --reload
 
-
-
 #curl "http://localhost:8000/file_data?user_id="5304343110"&file_id=21
+
+#curl "http://localhost:8000/date_dir_files?user_id="5304343110"&date_dir=02.05"

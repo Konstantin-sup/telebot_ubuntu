@@ -8,11 +8,21 @@ import requests
 SessionLocal = sessionmaker(bind=engine)
 session = SessionLocal()
 
-def row_to_dict(row) -> dict:
-    return {
-        c.name: getattr(row, c.name).isoformat() if isinstance(getattr(row, c.name), datetime) else getattr(row, c.name)
-        for c in row.__table__.columns
-    }
+def row_to_dict(row, long_list: bool) -> dict | list[dict]:  #long_list = len(long_list)>1
+    if not long_list:
+        return {
+            c.name: getattr(row, c.name).isoformat() if isinstance(getattr(row, c.name), datetime) else getattr(row, c.name)
+            for c in row.__table__.columns
+        }
+
+    return [
+        {
+            c.name: getattr(line, c.name).isoformat() if isinstance(getattr(line, c.name), datetime) else getattr(line,
+                                                                                                                  c.name)
+            for c in line.__table__.columns
+        }
+        for line in row
+        ]
 
 def create_request(endpoint: str, input_json=dict | None):
     if endpoint == "/load_metadata":
@@ -25,7 +35,7 @@ def create_request(endpoint: str, input_json=dict | None):
         response = requests.get(f"http://127.0.0.1:8000{endpoint}", params=input_json)
         resp_json = response.json()
         resp_status = response.status_code
-        return resp_json, resp_status
+        return resp_json.get("date_dir_files"), resp_status
 
     elif endpoint == '/file_data':
         response = requests.get(f"http://127.0.0.1:8000{endpoint}", params=input_json)
