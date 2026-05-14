@@ -1,11 +1,18 @@
 from db_model.main_table_model import engine, MainTable
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import select
+from datetime import datetime
 import requests
 
 
 SessionLocal = sessionmaker(bind=engine)
 session = SessionLocal()
+
+def row_to_dict(row) -> dict:
+    return {
+        c.name: getattr(row, c.name).isoformat() if isinstance(getattr(row, c.name), datetime) else getattr(row, c.name)
+        for c in row.__table__.columns
+    }
 
 def create_request(endpoint: str, input_json=dict | None):
     if endpoint == "/load_metadata":
