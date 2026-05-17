@@ -41,6 +41,14 @@ def create_month_path(month: str, user_id: int) -> str:
     month_path = os.path.join(data_path, str(user_id), get_time_data()["year"], month)
     return month_path
 
+def return_file_as(file_path: str, mode: str):
+    if mode == "text":
+        with open(file_path, "r", encoding="utf-8") as f_obj:
+            return f_obj.read()
+
+    elif mode == "file":
+        return open(file_path, "rb")
+
 def txt_file_count(dir_path) -> int:
     return sum(1 for f in os.listdir(dir_path) if f.endswith(".txt"))
 
@@ -124,5 +132,3 @@ def save_file(us_id, text=None, file_bytes=None, bytes_file_name=None, tele_file
         #     input_json=meta_json)
 
         return bytes_file_name
-
-

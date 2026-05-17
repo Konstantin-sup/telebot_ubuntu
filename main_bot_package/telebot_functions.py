@@ -17,6 +17,15 @@ def create_keyboard_panel():
     markup.add(del_btn, help_btn)
     return markup
 
+def text_file_send_keyboard():
+    text_file_markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    as_text = types.KeyboardButton("As text")
+    as_file = types.KeyboardButton("As '.txt' file📃")
+    options_btn = types.KeyboardButton("Back⬇️")
+    text_file_markup.add(as_text, as_file)
+    text_file_markup.add(options_btn)
+    return text_file_markup
+
 def inline_buttons(dir_path: str, call_back: str):
     keyboard = types.InlineKeyboardMarkup()
 

@@ -1,8 +1,8 @@
 import os
 from dotenv import load_dotenv
 import telebot
-from main_bot_package.telebot_functions import create_keyboard_panel, inline_buttons, send_inline_buttons
-from main_bot_package.file_date_functions import save_file, show_month_dirs, create_month_path
+from main_bot_package.telebot_functions import create_keyboard_panel, inline_buttons, send_inline_buttons, text_file_send_keyboard
+from main_bot_package.file_date_functions import save_file, show_month_dirs, create_month_path, return_file_as
 from db_model.api_functions import create_request
 
 load_dotenv()  #loading .env
@@ -51,6 +51,30 @@ def load_data(message):
         BOT.send_message(message.chat.id, "🟥 Sorry something went wrong, try again later")
 
 
+def send_file_as(response, txt_file_path):
+    if response.text == "As text":
+        file_text = return_file_as(file_path=txt_file_path, mode="text")
+        BOT.send_message(response.chat.id, file_text)
+        return
+
+    elif response.text == "As '.txt' file📃":
+        txt_file = return_file_as(file_path=txt_file_path, mode="file")
+        BOT.send_document(response.chat.id, txt_file, caption="Your .txt file")
+        return
+
+    elif response.text == "Back⬇️":
+        all_options = create_keyboard_panel()
+        BOT.send_message(
+            response.chat.id,
+            "All options⤵️",
+            reply_markup=all_options
+        )
+        return
+
+    else:
+        BOT.send_message(response.chat.id, "No such option")
+
+
 @BOT.message_handler(commands=['start'])
 def start(message):
     BOT.send_message(message.chat.id, "Hello i am bot for working with text, and files\n")
@@ -92,6 +116,39 @@ def handle_month(call):
         f"Here are your files from 📁{date_dir} directory⤵️",
         reply_markup=date_dir_files_fresh
     )
+
+
+@BOT.callback_query_handler(func=lambda call: call.data.startswith("Send me:"))
+def handle_month(call):
+    BOT.answer_callback_query(call.id)
+
+    file_id = call.data.split(":")[1]
+    user_id = call.from_user.id
+    input_json = {"user_id": user_id, "file_id": file_id}
+    file_json, status = create_request(endpoint='/file_data', input_json=input_json)
+    tele_file_id = file_json.get("tele_file_id")
+
+    if tele_file_id:
+        BOT.send_document(call.message.chat.id, tele_file_id, caption="Your file")
+        return
+
+    file_path = file_json.get("file_path")
+    send_file_keyboard = text_file_send_keyboard()
+
+    send_file_response = BOT.send_message(
+            call.message.chat.id,
+            "Send .txt as⤵️",
+            reply_markup=send_file_keyboard
+        )
+
+    BOT.register_next_step_handler(send_file_response, send_file_as, file_path)
+
+    # BOT.send_message(
+    #     call.message.chat.id,
+    #     f"Here are your files from 📁{date_dir} directory⤵️",
+    #     reply_markup=date_dir_files_fresh
+    # )
+
 
 
 @BOT.message_handler(func=lambda message: message.text in COMMANDS)
