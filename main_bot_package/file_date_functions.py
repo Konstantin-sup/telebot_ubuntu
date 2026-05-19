@@ -86,49 +86,31 @@ def save_file(us_id, text=None, file_bytes=None, bytes_file_name=None, tele_file
     os.makedirs(user_dir, exist_ok=True)  #makes dir for new user if not exists
     os.makedirs(os.path.join(user_dir, time.get("year"), time.get("month")), exist_ok=True) #makes new month dir in users_dir if not exists
     path_current_date_dir = os.path.join(user_dir, time.get("year"), time.get("month"), time.get("dir"))
+    os.makedirs(path_current_date_dir, exist_ok=True)
 
-    if text:  # so now if user sends text to save as more then once we create a dir for that
-        os.makedirs(path_current_date_dir, exist_ok=True)
+    if text:
         file_path, file_name = save_txt(path_current_date_dir, text, time_json=time)
 
-        # meta_json = create_metadata(
-        #     user_id=str(user_id),
-        #     file_path=file_path,
-        #     month_dir=time.get("month"),
-        #     file_name=file_name,
-        #     tele_file_id=tele_file_id,
-        #     date_dir=time.get("dir"))
-        #
-        # file_data, status = create_request(
-        #     '/load_metadata',
-        #     input_json=meta_json)
-
-        return file_name
-
-
-    if file_bytes:
-        os.makedirs(path_current_date_dir, exist_ok=True)  # makes date_dir if first file of the day
-
+    elif file_bytes:
         if os.path.exists(os.path.join(path_current_date_dir, bytes_file_name)):
             raise FileExistsError
 
-        elif len(bytes_file_name) > 15:
+        if len(bytes_file_name) > 15:
             f_name, f_format = os.path.splitext(bytes_file_name)
             bytes_file_name = f"{f_name[:10]}_{uuid.uuid4().hex[:3]}{f_format}"
 
         file_path = os.path.join(path_current_date_dir, bytes_file_name)
+        file_name = bytes_file_name
         write_file(file_path, file_bytes, mode="wb")
 
-        # meta_json = create_metadata(
-        #     user_id=str(user_id),
-        #     file_path=file_path,
-        #     month_dir=time.get("month"),
-        #     file_name=bytes_file_name,
-        #     tele_file_id=tele_file_id,
-        #     date_dir=time.get("dir"))
-        #
-        # file_data, status = create_request(
-        #     '/load_metadata',
-        #     input_json=meta_json)
+    meta_json = create_metadata(
+        user_id=str(user_id),
+        file_path=file_path,
+        month_dir=time.get("month"),
+        file_name=file_name,
+        tele_file_id=tele_file_id,
+        date_dir=time.get("dir"))
 
-        return bytes_file_name
+    file_data, status = create_request('/load_metadata', input_json=meta_json)
+
+    return file_name

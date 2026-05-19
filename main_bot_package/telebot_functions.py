@@ -13,8 +13,10 @@ def create_keyboard_panel():
     upload_btn = types.KeyboardButton("📤 Upload")
     del_btn = types.KeyboardButton("🗑️ Delete")
     help_btn = types.KeyboardButton("❓ Help")
+    back_btn = types.KeyboardButton("Back⬇️")
     markup.add(file_btn, upload_btn)
-    markup.add(del_btn, help_btn)
+    markup.add(del_btn, back_btn)
+    markup.add(help_btn)
     return markup
 
 def text_file_send_keyboard():

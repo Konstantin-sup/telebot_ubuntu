@@ -9,7 +9,7 @@ load_dotenv()  #loading .env
 
 bot_TOKEN = os.getenv("BOT_TOKEN")
 BOT = telebot.TeleBot(bot_TOKEN)
-COMMANDS = ["📁 My files", "📤 Upload", "🗑️ Delete", "❓ Help"]
+COMMANDS = ["📁 My files", "📤 Upload", "🗑️ Delete", "❓ Help", "Back⬇️"]
 
 
 def load_data(message):
@@ -47,7 +47,7 @@ def load_data(message):
         )
 
     except Exception as e:
-        print(e)
+        print(e)  #will be replaced
         BOT.send_message(message.chat.id, "🟥 Sorry something went wrong, try again later")
 
 
@@ -174,7 +174,12 @@ def reaction_to_button(message):
             BOT.send_message(message.chat.id,
                              "You haven't send any file yet")
 
-
+    elif message.text == "Back⬇️":
+        BOT.send_message(
+            message.chat.id,
+            "All options⤵️",
+            reply_markup=create_keyboard_panel()
+        )
 
 #filtration👇
 @BOT.message_handler(func=lambda message: True, content_types=['text', 'photo', 'voice', 'document', 'video_note'])
