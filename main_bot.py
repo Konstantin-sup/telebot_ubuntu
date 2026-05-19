@@ -127,27 +127,21 @@ def handle_month(call):
     input_json = {"user_id": user_id, "file_id": file_id}
     file_json, status = create_request(endpoint='/file_data', input_json=input_json)
     tele_file_id = file_json.get("tele_file_id")
+    file_path = file_json.get("file_path")
+    file_name = file_json.get("file_name")
 
-    if tele_file_id:
+    if tele_file_id and not file_name.endswith(".txt"):
         BOT.send_document(call.message.chat.id, tele_file_id, caption="Your file")
         return
 
-    file_path = file_json.get("file_path")
     send_file_keyboard = text_file_send_keyboard()
-
     send_file_response = BOT.send_message(
-            call.message.chat.id,
-            "Send .txt as⤵️",
-            reply_markup=send_file_keyboard
-        )
-
+        call.message.chat.id,
+        "Send .txt as⤵️",
+        reply_markup=send_file_keyboard
+    )
     BOT.register_next_step_handler(send_file_response, send_file_as, file_path)
 
-    # BOT.send_message(
-    #     call.message.chat.id,
-    #     f"Here are your files from 📁{date_dir} directory⤵️",
-    #     reply_markup=date_dir_files_fresh
-    # )
 
 
 
