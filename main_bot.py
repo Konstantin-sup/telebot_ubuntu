@@ -102,7 +102,7 @@ def handle_month(call):
 
 
 @BOT.callback_query_handler(func=lambda call: call.data.startswith("date_dir:"))
-def handle_month(call):
+def handle_date_dir(call):
     BOT.answer_callback_query(call.id)
 
     date_dir = call.data.split(":")[1]
@@ -119,7 +119,7 @@ def handle_month(call):
 
 
 @BOT.callback_query_handler(func=lambda call: call.data.startswith("Send me:"))
-def handle_month(call):
+def handle_send_file(call):
     BOT.answer_callback_query(call.id)
 
     file_id = call.data.split(":")[1]
