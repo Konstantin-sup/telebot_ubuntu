@@ -4,6 +4,7 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from db_model.declarative_base import Base
 from db_model.main_table_model import MainTable
+from db_model.user_quota_model import UserQuota
 from alembic import context
 
 # this is the Alembic Config object, which provides
