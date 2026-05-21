@@ -1,4 +1,6 @@
 from db_model.main_table_model import engine, MainTable
+from db_model.user_quota_model import UserQuota
+import os
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import select
 from datetime import datetime
@@ -43,6 +45,18 @@ def create_request(endpoint: str, input_json=dict | None):
         resp_status = response.status_code
         return resp_json.get("file_data"), resp_status
 
+    elif endpoint == '/get_quota':
+        response = requests.get(f"http://127.0.0.1:8000{endpoint}", params=input_json)
+        return response.json().get("used_space"), response.status_code
+
+    elif endpoint == '/update_quota':
+        response = requests.patch(f"http://127.0.0.1:8000{endpoint}", params=input_json)
+        return response.json(), response.status_code
+
+    elif endpoint == '/delete_file':
+        response = requests.delete(f"http://127.0.0.1:8000{endpoint}", params=input_json)
+        return response.json(), response.status_code
+
 
 
 def add_metadata(metadata_class):
@@ -80,3 +94,39 @@ def get_file_data(user_id: str, file_id: int):
     ).scalars().first()
 
     return result
+
+
+def get_user_quota(user_id: str):
+    return session.execute(
+        select(UserQuota).where(UserQuota.user_id == user_id)
+    ).scalars().first()
+
+
+def update_user_quota(user_id: str, file_size: int):
+    quota = get_user_quota(user_id)
+
+    if quota is None:  #if users first file
+        new_quota = UserQuota(user_id=user_id, used_space=file_size)
+        session.add(new_quota)
+    else:
+        quota.used_space += file_size  #file_size could be also negative
+
+    session.commit()
+
+
+def remove_file(user_id: str, file_id: int):
+    file = get_file_data(user_id=user_id, file_id=file_id)  #class from main_table
+
+    if file is None:
+        return None
+
+    if os.path.exists(file.file_path):
+        os.remove(file.file_path)
+
+    #updating quota if user del file
+    update_user_quota(user_id=user_id, file_size=-file.file_size)
+
+    session.delete(file)
+    session.commit()
+
+    return True
