@@ -14,18 +14,32 @@ COMMANDS = ["📁 My files", "📤 Upload", "🗑️ Delete", "❓ Help", "Back�
 
 def load_data(message):
     try:
+        used_space, status = create_request('/get_quota', {"user_id": str(message.from_user.id)})
+
         if message.content_type in ['voice', 'video_note', 'photo']:  #currently takes text, documents only.
             raise TypeError
 
         elif message.text:
+            text_size = len(message.text.encode("utf-8"))  # weight in bytes
+
+            if used_space + text_size > 250 * 1024 * 1024:
+                full_storage(message_chat_id=message.chat.id, used_space=used_space)
+                return
+
             fl_name = save_file(message.from_user.id, text=message.text)
             BOT.send_message(message.chat.id, f"Text was saved successfully✅ as '{fl_name}'")
 
         elif message.document:
             file_size = message.document.file_size
 
+
             if file_size > 15 * 1024 * 1024:  ## 15 MB
                 BOT.send_message(message.chat.id, "File is too heavy, max(15mb)")
+                return
+
+            if used_space + file_size > 250 * 1024 * 1024:  #cheking if there place for the next fl
+                full_storage(message_chat_id=message.chat.id, used_space=used_space)
+
                 return
 
             BOT.send_message(message.chat.id, "Got it, may take a lil time⌛ to save it, please wait")
@@ -47,9 +61,16 @@ def load_data(message):
         )
 
     except Exception as e:
-        print(e)  #will be replaced
-        BOT.send_message(message.chat.id, "🟥 Sorry something went wrong, try again later")
+        raise e #will be replaced
+       # BOT.send_message(message.chat.id, "🟥 Sorry something went wrong, try again later")
 
+def full_storage(message_chat_id: str, used_space: int):
+    BOT.send_message(
+        message_chat_id,
+        f"No more place for this file\n"
+        f"Full: {round(used_space / (1024 * 1024), 2)}MB of 250MB\n"
+        "Delete files with '🗑️ Delete' to continue"
+    )
 
 def send_file_as(response, txt_file_path):
     if response.text == "As text":
@@ -96,7 +117,7 @@ def handle_month(call):
 
     BOT.send_message(
         call.message.chat.id,
-        f"Here is your data from 📁{month} directory⤵️",
+        f"Select folder from 📁{month} directory⤵️",
         reply_markup=inline
     )
 
