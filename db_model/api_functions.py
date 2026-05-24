@@ -121,13 +121,13 @@ def remove_file(user_id: str, file_id: int):
     if file is None:
         return None
 
-    if os.path.exists(file.file_path):
+    if os.path.exists(file.file_path):  #del file from local server
         os.remove(file.file_path)
 
-    #updating quota if user del file
+    #updating quota if user del file             |here is minus
     update_user_quota(user_id=user_id, file_size=-file.file_size)
 
-    session.delete(file)
+    session.delete(file)  #also deleting metadata from main_table
     session.commit()
 
     return True

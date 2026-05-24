@@ -203,6 +203,25 @@ def handle_delete_confirm(call):
         reply_markup=delete_keyboard
     )
 
+@BOT.callback_query_handler(func=lambda call: call.data.startswith("ConfirmDelete:"))
+def handle_confirm_delete(call):
+    BOT.answer_callback_query(call.id)
+    file_id = call.data.split(":")[1]
+    user_id = call.from_user.id
+    status = create_request('/delete_file', {"user_id": user_id, "file_id": file_id})
+
+    if status == 204:
+        BOT.send_message(call.message.chat.id, "✅ File deleted successfully")
+
+    else:
+        BOT.send_message(call.message.chat.id, "🟥 Something went wrong, try again later")
+
+
+@BOT.callback_query_handler(func=lambda call: call.data == "CancelDelete")
+def handle_cancel_delete(call):
+    BOT.answer_callback_query(call.id)
+    BOT.send_message(call.message.chat.id, "Deletion cancelled✅")
+
 @BOT.message_handler(func=lambda message: message.text in COMMANDS)
 def reaction_to_button(message):
     if message.text == "📤 Upload":
