@@ -265,6 +265,19 @@ def reaction_to_button(message):
             reply_markup=create_keyboard_panel()
         )
 
+    elif message.text == "❓ Help":
+        used_space, status = create_request('/get_quota', {"user_id": str(message.from_user.id)})
+        used_mb = round(used_space / (1024 * 1024), 2)
+
+        BOT.send_message(
+            message.chat.id,
+            f"❓ Help\n\n"
+            f"📁 My files — browse and retrieve your saved files\n"
+            f"📤 Upload — save a text or document (max 15MB)\n"
+            f"🗑️ Delete — delete saved files\n\n"
+            f"💾 Storage: {used_mb}MB of 250MB used"
+        )
+
 #filtration👇
 @BOT.message_handler(func=lambda message: True, content_types=['text', 'photo', 'voice', 'document', 'video_note'])
 def handle_not_supported(message):
