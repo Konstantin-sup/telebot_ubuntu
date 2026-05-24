@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from starlette.responses import Response
 from db_model.api_functions import (add_metadata, get_date_dir_files, get_file_data,
                                     row_to_dict, get_user_quota, update_user_quota, remove_file)
 app = FastAPI()
@@ -59,7 +60,7 @@ def delete_file(user_id: str, file_id: int):
     if not result:
         return JSONResponse(status_code=404, content={"error": "file not found"})
 
-    return JSONResponse(status_code=204, content={"ok": True}) #idk why but content is required even if 204
+    return Response(status_code=204) #idk why but content is required even if 204
 
 
 
