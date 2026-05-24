@@ -59,7 +59,7 @@ def delete_file(user_id: str, file_id: int):
     if not result:
         return JSONResponse(status_code=404, content={"error": "file not found"})
 
-    return JSONResponse(status_code=204)
+    return JSONResponse(status_code=204, content={"ok": True}) #idk why but content is required even if 204
 
 
 
