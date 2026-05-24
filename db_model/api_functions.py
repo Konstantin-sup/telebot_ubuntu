@@ -55,7 +55,7 @@ def create_request(endpoint: str, input_json=dict | None):
 
     elif endpoint == '/delete_file':
         response = requests.delete(f"http://127.0.0.1:8000{endpoint}", params=input_json)
-        return response.json(), response.status_code
+        return response.status_code
 
 
 
