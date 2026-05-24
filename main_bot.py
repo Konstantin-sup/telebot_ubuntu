@@ -164,8 +164,6 @@ def handle_send_file(call):
     BOT.register_next_step_handler(send_file_response, send_file_as, file_path)
 
 
-
-
 @BOT.message_handler(func=lambda message: message.text in COMMANDS)
 def reaction_to_button(message):
     if message.text == "📤 Upload":
@@ -181,13 +179,26 @@ def reaction_to_button(message):
 
             BOT.send_message(
                 message.chat.id,
-                "Here are yours data⤵️",
+                "Select month folder⤵️",
                 reply_markup=inline
             )
 
         except FileNotFoundError:
             BOT.send_message(message.chat.id,
                              "You haven't send any file yet")
+
+    elif message.text == "🗑️ Delete":
+        try:
+            months_dir_path = show_month_dirs(message.from_user.id)
+            inline = inline_buttons(dir_path=months_dir_path, call_back="month_dir_delete")
+            BOT.send_message(
+                message.chat.id,
+                "Select a folder to delete from⤵️",
+                reply_markup=inline
+            )
+        except FileNotFoundError:
+            BOT.send_message(message.chat.id, "You haven't sent any files yet")
+
 
     elif message.text == "Back⬇️":
         BOT.send_message(

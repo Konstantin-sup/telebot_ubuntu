@@ -31,19 +31,19 @@ def text_file_send_keyboard():
 def inline_buttons(dir_path: str, call_back: str):
     keyboard = types.InlineKeyboardMarkup()
 
-    if call_back == "month_dir":
+    if call_back in ("month_dir", "month_dir_delete"):
+        prefix = call_back
         for month_dir in os.listdir(dir_path):
-            call_back = f"month_dir:{month_dir}"
-            keyboard.add(types.InlineKeyboardButton(f"Show: 📁 {month_dir}", callback_data=call_back))
+            keyboard.add(types.InlineKeyboardButton(f"Show: 📁 {month_dir}", callback_data=f"{prefix}:{month_dir}"))
 
         return keyboard
 
-    elif call_back == "date_dir":
+    elif call_back in ("date_dir", "date_dir_delete"):
+        prefix = call_back
         with os.scandir(dir_path) as entries:
             for entry in entries:
                 if entry.is_dir():
-                    call_back = f"date_dir:{entry.name}"
-                    keyboard.add(types.InlineKeyboardButton(f"Show me:📁 {entry.name}", callback_data=call_back))
+                    keyboard.add(types.InlineKeyboardButton(f"Show: 📁 {entry.name}", callback_data=f"{prefix}:{entry.name}"))
 
         return keyboard
 
