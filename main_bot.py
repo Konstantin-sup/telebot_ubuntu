@@ -1,7 +1,8 @@
 import os
 from dotenv import load_dotenv
 import telebot
-from main_bot_package.telebot_functions import create_keyboard_panel, inline_buttons, send_inline_buttons, text_file_send_keyboard
+from main_bot_package.telebot_functions import (create_keyboard_panel, inline_buttons,
+                                                send_inline_buttons, text_file_send_keyboard, delete_inline_buttons, del_file_check_keyboard)
 from main_bot_package.file_date_functions import save_file, show_month_dirs, create_month_path, return_file_as
 from db_model.api_functions import create_request
 
@@ -163,6 +164,44 @@ def handle_send_file(call):
     )
     BOT.register_next_step_handler(send_file_response, send_file_as, file_path)
 
+
+@BOT.callback_query_handler(func=lambda call: call.data.startswith("month_dir_delete:"))
+def handle_month_dir_delete(call):
+    BOT.answer_callback_query(call.id)
+    month = call.data.split(":")[1]
+    month_dir_path = create_month_path(month=month, user_id=call.from_user.id)
+    inline = inline_buttons(dir_path=month_dir_path, call_back="date_dir_delete")
+    BOT.send_message(
+        call.message.chat.id,
+        f"📁 {month} — select a date⤵️",
+        reply_markup=inline
+    )
+
+@BOT.callback_query_handler(func=lambda call: call.data.startswith("date_dir_delete:"))
+def handle_date_dir_delete(call):
+    BOT.answer_callback_query(call.id)
+    date_dir = call.data.split(":")[1]
+    user_id = call.from_user.id
+    input_json = {"user_id": user_id, "date_dir": date_dir}
+    date_dir_files_list, status = create_request(endpoint='/date_dir_files', input_json=input_json)
+    inline = delete_inline_buttons(date_dir_files_list)
+    BOT.send_message(
+        call.message.chat.id,
+        f"📁 {date_dir} — select a file to delete⤵️",
+        reply_markup=inline
+    )
+
+@BOT.callback_query_handler(func=lambda call: call.data.startswith("Delete:"))
+def handle_delete_confirm(call):
+    BOT.answer_callback_query(call.id)
+    file_id = call.data.split(":")[1]
+    delete_keyboard = del_file_check_keyboard(file_id=file_id)
+
+    BOT.send_message(
+        call.message.chat.id,
+        "Are you sure you want to delete this file?",
+        reply_markup=delete_keyboard
+    )
 
 @BOT.message_handler(func=lambda message: message.text in COMMANDS)
 def reaction_to_button(message):

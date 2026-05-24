@@ -17,7 +17,17 @@ def create_keyboard_panel():
     markup.add(file_btn, upload_btn)
     markup.add(del_btn, back_btn)
     markup.add(help_btn)
+
     return markup
+
+def del_file_check_keyboard(file_id: str):
+    keyboard = types.InlineKeyboardMarkup()
+    keyboard.add(
+        types.InlineKeyboardButton("✅ Yes", callback_data=f"ConfirmDelete:{file_id}"),
+        types.InlineKeyboardButton("❌ No", callback_data="CancelDelete")
+    )
+
+    return keyboard
 
 def text_file_send_keyboard():
     text_file_markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -26,6 +36,7 @@ def text_file_send_keyboard():
     options_btn = types.KeyboardButton("Back⬇️")
     text_file_markup.add(as_text, as_file)
     text_file_markup.add(options_btn)
+
     return text_file_markup
 
 def inline_buttons(dir_path: str, call_back: str):
@@ -55,5 +66,16 @@ def send_inline_buttons(dict_files: list[dict]):
         f_id = data.get("file_id")
         call_back = f"Send me:{f_id}"
         keyboard.add(types.InlineKeyboardButton(f"Send me:📄 {f_name}", callback_data=call_back))
+
+    return keyboard
+
+
+def delete_inline_buttons(dict_files: list[dict]):
+    keyboard = types.InlineKeyboardMarkup()
+    for data in dict_files:
+        f_name = data.get("file_name")
+        f_id = data.get("file_id")
+        call_back = f"Delete:{f_id}"
+        keyboard.add(types.InlineKeyboardButton(f"🗑️ {f_name}", callback_data=call_back))
 
     return keyboard
