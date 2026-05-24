@@ -27,7 +27,7 @@ def load_data(message):
                 full_storage(message_chat_id=message.chat.id, used_space=used_space)
                 return
 
-            fl_name = save_file(message.from_user.id, text=message.text)
+            fl_name = save_file(message.from_user.id, file_type="text", text=message.text)
             BOT.send_message(message.chat.id, f"Text was saved successfully✅ as '{fl_name}'")
 
         elif message.document:
@@ -47,8 +47,9 @@ def load_data(message):
             file_id = message.document.file_id
             file_info = BOT.get_file(file_id)
             downloaded_bytes = BOT.download_file(file_info.file_path)
-            fl_name = save_file(message.from_user.id, tele_file_id=file_id, file_bytes=downloaded_bytes, bytes_file_name=message.document.file_name)
+            fl_name = save_file(message.from_user.id, tele_file_id=file_id, file_bytes=downloaded_bytes, bytes_file_name=message.document.file_name, file_type="document")
             BOT.send_message(message.chat.id, f"File was saved successfully✅ as '{fl_name}'")
+
 
     except TypeError:
         BOT.send_message(message.chat.id, "Currently are only text and files allowed, try again")

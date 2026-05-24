@@ -69,7 +69,7 @@ def write_file(file_path, content, mode="w", encoding=None):
     with open(file_path, mode, encoding=encoding) as f_object:
         f_object.write(content)
 
-def create_metadata(user_id: str, file_path: str, month_dir: str, file_name: str, date_dir: str, file_size: int,  tele_file_id= str|None):
+def create_metadata(user_id: str, file_type: str, file_path: str, month_dir: str, file_name: str, date_dir: str, file_size: int,  tele_file_id= str|None):
     return {
         "user_id": user_id,
         "file_path": file_path,
@@ -77,10 +77,11 @@ def create_metadata(user_id: str, file_path: str, month_dir: str, file_name: str
         "file_name": file_name,
         "tele_file_id": tele_file_id,
         "date_dir": date_dir,
-        "file_size": file_size
+        "file_size": file_size,
+        "file_type": file_type
     }
 
-def save_file(us_id, text=None, file_bytes=None, bytes_file_name=None, tele_file_id=None):
+def save_file(us_id, file_type: str, text=None, file_bytes=None, bytes_file_name=None, tele_file_id=None):
     user_id = us_id  #better to make users_dir with theirs id(they are unique)
     user_dir = os.path.join(data_path, str(user_id))
     time = get_time_data()
@@ -113,7 +114,9 @@ def save_file(us_id, text=None, file_bytes=None, bytes_file_name=None, tele_file
         file_name=file_name,
         tele_file_id=tele_file_id,
         date_dir=time.get("dir"),
-        file_size=file_size)
+        file_size=file_size,
+        file_type=file_type
+    )
 
     file_data, status = create_request('/load_metadata', input_json=meta_json)
     create_request('/update_quota', {"user_id": str(us_id), "file_size": file_size})

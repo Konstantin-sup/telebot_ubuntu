@@ -14,6 +14,7 @@ class Metadata(BaseModel):
     file_name: str
     date_dir: str
     file_size: int
+    file_type: str
 
 
 @app.post('/load_metadata')
