@@ -181,12 +181,22 @@ def handle_send_file(call):
     file_json, status = create_request(endpoint='/file_data', input_json=input_json)
     tele_file_id = file_json.get("tele_file_id")
     file_path = file_json.get("file_path")
-    file_name = file_json.get("file_name")
+    file_type = file_json.get("file_type")
 
-    if tele_file_id and not file_name.endswith(".txt"):
-        BOT.send_document(call.message.chat.id, tele_file_id, caption="Your file")
+    send_methods = {
+        "photo": lambda: BOT.send_photo(call.message.chat.id, tele_file_id, caption="Your photo"),
+        "video": lambda: BOT.send_video(call.message.chat.id, tele_file_id, caption="Your video"),
+        "video_note": lambda: BOT.send_video_note(call.message.chat.id, tele_file_id),
+        "audio": lambda: BOT.send_audio(call.message.chat.id, tele_file_id, caption="Your audio"),
+        "voice": lambda: BOT.send_voice(call.message.chat.id, tele_file_id),
+        "document": lambda: BOT.send_document(call.message.chat.id, tele_file_id, caption="Your file"),
+    }
+
+    if file_type in send_methods:
+        send_methods[file_type]()
         return
 
+    #if txt
     send_file_keyboard = text_file_send_keyboard()
     send_file_response = BOT.send_message(
         call.message.chat.id,
@@ -194,7 +204,6 @@ def handle_send_file(call):
         reply_markup=send_file_keyboard
     )
     BOT.register_next_step_handler(send_file_response, send_file_as, file_path)
-
 
 @BOT.callback_query_handler(func=lambda call: call.data.startswith("month_dir_delete:"))
 def handle_month_dir_delete(call):
