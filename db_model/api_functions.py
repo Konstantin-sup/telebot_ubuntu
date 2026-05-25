@@ -122,8 +122,21 @@ def remove_file(user_id: str, file_id: int):
     if file is None:
         return None
 
-    if os.path.exists(file.file_path):  #del file from local server
+    if os.path.exists(file.file_path):
+        date_dir = os.path.dirname(file.file_path)  # date_dir
+        month_dir = os.path.dirname(date_dir)  # month_dir
+        year_dir = os.path.dirname(month_dir)  # year_dir
+
         os.remove(file.file_path)
+
+        if len(os.listdir(date_dir)) == 0:
+            os.rmdir(date_dir)
+
+        if len(os.listdir(month_dir)) == 0:
+            os.rmdir(month_dir)
+
+        if len(os.listdir(year_dir)) == 0:
+            os.rmdir(year_dir)
 
     #updating quota if user del file             |here is minus
     update_user_quota(user_id=user_id, file_size=-file.file_size)
