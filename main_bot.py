@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import telebot
 from main_bot_package.telebot_functions import (create_keyboard_panel, inline_buttons,
                                                 send_inline_buttons, text_file_send_keyboard, delete_inline_buttons, del_file_check_keyboard)
-from main_bot_package.file_date_functions import save_file, show_month_dirs, create_month_path, return_file_as
+from main_bot_package.file_date_functions import save_file, show_month_dirs, create_month_path, return_file_as, create_f_name
 from db_model.api_functions import create_request
 
 load_dotenv()  #loading .env
@@ -11,28 +11,62 @@ load_dotenv()  #loading .env
 bot_TOKEN = os.getenv("BOT_TOKEN")
 BOT = telebot.TeleBot(bot_TOKEN)
 COMMANDS = ["📁 My files", "📤 Upload", "🗑️ Delete", "❓ Help", "Back⬇️"]
+UNSUPPORTED_TYPES = ['sticker', 'location', 'contact', 'poll', 'animation']
+SUPPORTED_TYPES = ['document', 'video_note', 'photo', 'video', 'audio', 'voice']
+
+def upload_file_types(message, us_content_type):
+    f_types = {
+        'document': message.document,
+        'video_note': message.video_note,
+        'photo': message.photo[-1] if message.photo else None,
+        'video': message.video,
+        'audio': message.audio,
+        'voice': message.voice
+               }
+
+    return f_types.get(us_content_type)
+
+def load_content_type(content_type, str_cont_type: str, user_id: str, chat_id: str):
+    file_id = content_type.file_id
+    file_info = BOT.get_file(file_id)
+    downloaded_bytes = BOT.download_file(file_info.file_path)
+
+    if str_cont_type == 'document':
+        fl_name = content_type.file_name
+
+    else:
+        fl_name = create_f_name(str_cont_type)
+
+    file_name = save_file(user_id, tele_file_id=file_id, file_bytes=downloaded_bytes,
+                        bytes_file_name=fl_name, file_type=str_cont_type)
+
+    BOT.send_message(chat_id, f"{str_cont_type.capitalize()} was saved successfully✅ as '{file_name}'")
 
 
 def load_data(message):
     try:
         used_space, status = create_request('/get_quota', {"user_id": str(message.from_user.id)})
+        user_content_type = message.content_type
+        chat_id = message.chat.id
+        us_id = message.from_user.id
 
-        if message.content_type in ['voice', 'video_note', 'photo']:  #currently takes text, documents only.
-            raise TypeError
+        if user_content_type in UNSUPPORTED_TYPES:  #currently takes text, documents only.
+            BOT.send_message(chat_id, "❌ This type of content is not supported\nTry sending a file, photo, video, audio or text")
+            return
 
         elif message.text:
             text_size = len(message.text.encode("utf-8"))  # weight in bytes
 
             if used_space + text_size > 250 * 1024 * 1024:
-                full_storage(message_chat_id=message.chat.id, used_space=used_space)
+                full_storage(message_chat_id=chat_id, used_space=used_space)
                 return
 
-            fl_name = save_file(message.from_user.id, file_type="text", text=message.text)
-            BOT.send_message(message.chat.id, f"Text was saved successfully✅ as '{fl_name}'")
+            fl_name = save_file(us_id, file_type="text", text=message.text)
+            BOT.send_message(chat_id, f"Text was saved successfully✅ as '{fl_name}'")
 
-        elif message.document:
-            file_size = message.document.file_size
-
+        elif user_content_type in SUPPORTED_TYPES:
+            file_type = upload_file_types(message, user_content_type)
+            file_size = file_type.file_size
 
             if file_size > 15 * 1024 * 1024:  ## 15 MB
                 BOT.send_message(message.chat.id, "File is too heavy, max(15mb)")
@@ -40,20 +74,16 @@ def load_data(message):
 
             if used_space + file_size > 250 * 1024 * 1024:  #cheking if there place for the next fl
                 full_storage(message_chat_id=message.chat.id, used_space=used_space)
-
                 return
 
             BOT.send_message(message.chat.id, "Got it, may take a lil time⌛ to save it, please wait")
-            file_id = message.document.file_id
-            file_info = BOT.get_file(file_id)
-            downloaded_bytes = BOT.download_file(file_info.file_path)
-            fl_name = save_file(message.from_user.id, tele_file_id=file_id, file_bytes=downloaded_bytes, bytes_file_name=message.document.file_name, file_type="document")
-            BOT.send_message(message.chat.id, f"File was saved successfully✅ as '{fl_name}'")
+            load_content_type(file_type, str_cont_type=user_content_type, user_id=us_id, chat_id=chat_id)
 
 
-    except TypeError:
-        BOT.send_message(message.chat.id, "Currently are only text and files allowed, try again")
+    except TypeError as e:
+        BOT.send_message(message.chat.id, "Unsupported Content, send something else")
         BOT.register_next_step_handler(message, load_data)
+        raise e
 
     except FileExistsError:
         BOT.send_message(
@@ -63,8 +93,8 @@ def load_data(message):
         )
 
     except Exception as e:
+        BOT.send_message(message.chat.id, "🟥 Sorry something went wrong, try again later")
         raise e #will be replaced
-       # BOT.send_message(message.chat.id, "🟥 Sorry something went wrong, try again later")
 
 def full_storage(message_chat_id: str, used_space: int):
     BOT.send_message(
@@ -266,19 +296,31 @@ def reaction_to_button(message):
             reply_markup=create_keyboard_panel()
         )
 
+
     elif message.text == "❓ Help":
+
         used_space, status = create_request('/get_quota', {"user_id": str(message.from_user.id)})
+
         used_mb = round(used_space / (1024 * 1024), 2)
 
         BOT.send_message(
+
             message.chat.id,
+
             f"❓ Help\n\n"
-            f"📁 My files — browse and retrieve your saved files\n"
-            f"📤 Upload — save a text or document (max 15MB)\n"
+            f"📁 My files — browse and retrieve your saved files\n\n"
+            f"📤 Upload — save content (max 15MB per file):\n"
+            f"     • Text\n"
+            f"     • Documents\n"
+            f"     • Photos\n"
+            f"     • Video\n"
+            f"     • Video notes (circles)\n"
+            f"     • Audio\n"
+            f"     • Voice messages\n\n"
             f"🗑️ Delete — delete saved files\n\n"
             f"💾 Storage: {used_mb}MB of 250MB used"
-        )
 
+        )
 #filtration👇
 @BOT.message_handler(func=lambda message: True, content_types=['text', 'photo', 'voice', 'document', 'video_note'])
 def handle_not_supported(message):

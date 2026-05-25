@@ -26,6 +26,18 @@ months = {
 
 data_path = os.getenv("PATH_TO_DATA")
 
+def create_f_name(str_content_type: str):
+    names_dict = {
+        'photo': f"photo_{uuid.uuid4().hex[:5]}.jpg",
+        'video_note': f"video_note_{uuid.uuid4().hex[:5]}_.mp4",
+        'video': f"video_{uuid.uuid4().hex[:5]}_.mp4",
+        'audio': f"audio_{uuid.uuid4().hex[:5]}_.mp3",
+        'voice': f"voice_{uuid.uuid4().hex[:5]}.ogg"
+    }
+
+    return names_dict.get(str_content_type)
+
+
 def get_time_data():  #returns always current time, needs on server where requests 24/7
     now = datetime.now()
 
@@ -97,7 +109,7 @@ def save_file(us_id, file_type: str, text=None, file_bytes=None, bytes_file_name
         if os.path.exists(os.path.join(path_current_date_dir, bytes_file_name)):
             raise FileExistsError
 
-        if len(bytes_file_name) > 15:
+        if len(bytes_file_name) > 15 and file_type == "document":
             f_name, f_format = os.path.splitext(bytes_file_name)
             bytes_file_name = f"{f_name[:10]}_{uuid.uuid4().hex[:3]}{f_format}"
 
