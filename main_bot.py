@@ -44,6 +44,10 @@ def load_content_type(content_type, str_cont_type: str, user_id: str, chat_id: s
 
 
 def load_data(message):
+    if message.text in COMMANDS:
+        reaction_to_button(message)
+        return
+
     try:
         used_space, status = create_request('/get_quota', {"user_id": str(message.from_user.id)})
         user_content_type = message.content_type
@@ -213,7 +217,7 @@ def handle_month_dir_delete(call):
     inline = inline_buttons(dir_path=month_dir_path, call_back="date_dir_delete")
     BOT.send_message(
         call.message.chat.id,
-        f"📁 {month} — select a date⤵️",
+        f"📁 {month} — select a date to delete🗑️ files from⤵️",
         reply_markup=inline
     )
 
@@ -227,7 +231,7 @@ def handle_date_dir_delete(call):
     inline = delete_inline_buttons(date_dir_files_list)
     BOT.send_message(
         call.message.chat.id,
-        f"📁 {date_dir} — select a file to delete⤵️",
+        f"📁 {date_dir} — select a file to delete🚫️",
         reply_markup=inline
     )
 
@@ -330,8 +334,9 @@ def reaction_to_button(message):
             f"💾 Storage: {used_mb}MB of 250MB used"
 
         )
-#filtration👇
-@BOT.message_handler(func=lambda message: True, content_types=['text', 'photo', 'voice', 'document', 'video_note'])
+
+#filtration
+@BOT.message_handler(func=lambda message: True, content_types=['text', 'photo', 'voice', 'document', 'video_note', 'audio'])
 def handle_not_supported(message):
     BOT.send_message(
         message.chat.id,
