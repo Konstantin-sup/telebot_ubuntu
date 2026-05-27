@@ -1,7 +1,6 @@
-from db_model.main_table_model import engine, MainTable
+from db_model.main_table_model import MainTable
 from db_model.user_quota_model import UserQuota
 import os
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy import select
 from datetime import datetime
 import requests

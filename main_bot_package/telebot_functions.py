@@ -2,7 +2,6 @@
 so i kep my code clean."""
 import os
 from telebot import types
-from os import scandir
 
 def create_keyboard_panel():
     """Making a keyboard, for a '/start' command,

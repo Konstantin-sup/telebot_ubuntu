@@ -1,14 +1,9 @@
-import os
+
 from db_model.declarative_base import Base
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import VARCHAR, create_engine, DateTime, BIGINT
+from sqlalchemy import VARCHAR, DateTime, BIGINT
 from datetime import datetime
-from dotenv import load_dotenv
 
-load_dotenv()  #loading .env
-
-db_url = os.getenv("DB_URL")
-engine = create_engine(db_url, echo=True)
 
 class MainTable(Base):
     __tablename__ = "main_table"

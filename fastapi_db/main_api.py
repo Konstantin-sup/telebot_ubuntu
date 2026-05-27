@@ -1,11 +1,11 @@
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from db_model.main_table_model import engine
+from db_model.engine_session import SessionLocal
 from starlette.responses import Response
 from db_model.api_functions import (add_metadata, get_date_dir_files, get_file_data,
                                     row_to_dict, get_user_quota, update_user_quota, remove_file)
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 from fastapi import Depends
 
 app = FastAPI()
@@ -20,7 +20,6 @@ class Metadata(BaseModel):
     file_size: int
     file_type: str
 
-SessionLocal = sessionmaker(bind=engine)
 
 def get_session():
     with SessionLocal() as session:
