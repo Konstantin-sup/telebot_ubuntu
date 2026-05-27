@@ -94,12 +94,13 @@ def load_data(message):
         BOT.register_next_step_handler(message, load_data)
         raise e
 
-    except FileExistsError:
-        BOT.send_message(
-            message.chat.id,
-            "You have already send this file today",
-            reply_markup=create_keyboard_panel()
-        )
+    # except FileExistsError:
+    #     BOT.send_message(
+    #         message.chat.id,
+    #         "You have already send this file today",
+    #         reply_markup=create_keyboard_panel()
+    #     )
+    #     return
 
     except Exception as e:
         BOT.send_message(message.chat.id, "🟥 Sorry something went wrong, try again later")

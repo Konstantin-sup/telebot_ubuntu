@@ -7,8 +7,6 @@ from datetime import datetime
 import requests
 
 
-SessionLocal = sessionmaker(bind=engine)
-
 def row_to_dict(row, long_list: bool) -> dict | list[dict]:  #long_list = len(long_list)>1
     if not long_list:
         return {
@@ -34,7 +32,7 @@ def create_request(endpoint: str, input_json=dict | None):
             return resp_json, resp_status
 
         elif endpoint == "/health":
-            response = requests.post(f"http://127.0.0.1:8000{endpoint}")
+            response = requests.get(f"http://127.0.0.1:8000{endpoint}")
             resp_status = response.status_code
             return resp_status
 
@@ -66,98 +64,71 @@ def create_request(endpoint: str, input_json=dict | None):
         raise ConnectionError("FastAPI is unavailable")
 
 
-def add_metadata(metadata_class):
-    with SessionLocal() as session:
-        index = MainTable(user_id=metadata_class.user_id, file_path=metadata_class.file_path,
-                          tele_file_id=metadata_class.tele_file_id, date_dir=metadata_class.date_dir,
-                          month_dir=metadata_class.month_dir, file_name=metadata_class.file_name,
-                          file_size=metadata_class.file_size, file_type=metadata_class.file_type)
+def add_metadata(metadata_class, session):
+    index = MainTable(user_id=metadata_class.user_id, file_path=metadata_class.file_path,
+                      tele_file_id=metadata_class.tele_file_id, date_dir=metadata_class.date_dir,
+                      month_dir=metadata_class.month_dir, file_name=metadata_class.file_name,
+                      file_size=metadata_class.file_size, file_type=metadata_class.file_type)
+    session.add(index)
+    session.commit()
+    session.refresh(index)
+    return index.file_id, index.file_path
 
 
-        session.add(index)
-        session.commit()
-        session.refresh(index)
-
-        return index.file_id, index.file_path
-
-
-def get_date_dir_files(user_id: str, date_dir: str):
-    with SessionLocal() as session:
-        result = session.execute(
-            select(MainTable)
-            .where(
-                MainTable.user_id == user_id,
-                MainTable.date_dir == date_dir
-            )
-            .order_by(MainTable.date_creation.asc())
-        ).scalars().all()
-
-        return result
+def get_date_dir_files(user_id: str, date_dir: str, session):
+    return session.execute(
+        select(MainTable)
+        .where(MainTable.user_id == user_id, MainTable.date_dir == date_dir)
+        .order_by(MainTable.date_creation.asc())
+    ).scalars().all()
 
 
-def get_file_data(user_id: str, file_id: int):
-    with SessionLocal() as session:
-        result = session.execute(
-            select(MainTable)
-            .where(
-                MainTable.user_id == user_id,
-                MainTable.file_id == file_id
-            )
-        ).scalars().first()
-
-        return result
+def get_file_data(user_id: str, file_id: int, session):
+    return session.execute(
+        select(MainTable)
+        .where(MainTable.user_id == user_id, MainTable.file_id == file_id)
+    ).scalars().first()
 
 
-def get_user_quota(user_id: str):
-    with SessionLocal() as session:
-        return session.execute(
-            select(UserQuota).where(UserQuota.user_id == user_id)
-        ).scalars().first()
+def get_user_quota(user_id: str, session):
+    return session.execute(
+        select(UserQuota).where(UserQuota.user_id == user_id)
+    ).scalars().first()
 
 
-def update_user_quota(user_id: str, file_size: int):
-    with SessionLocal() as session:
-        quota = get_user_quota(user_id)
-
-        if quota is None:  #if users first file
-            new_quota = UserQuota(user_id=user_id, used_space=file_size)
-            session.add(new_quota)
-        else:
-            quota.used_space += file_size  #file_size could be also negative
-
-        session.commit()
+def update_user_quota(user_id: str, file_size: int, session):
+    quota = get_user_quota(user_id=user_id, session=session)
+    if quota is None:
+        session.add(UserQuota(user_id=user_id, used_space=file_size))
+    else:
+        quota.used_space += file_size
+    session.commit()
 
 
-def remove_file(user_id: str, file_id: int):
-    with SessionLocal() as session:
-        file = get_file_data(user_id=user_id, file_id=file_id)  #class from main_table
+def remove_file(user_id: str, file_id: int, session):
+    file = get_file_data(user_id=user_id, file_id=file_id, session=session)
 
-        if file is None:
-            return None
+    if file is None:
+        return None
 
-        file_path = file.file_path
-        file_size = file.file_size
+    file_path = file.file_path
+    file_size = file.file_size
 
-        # updating quota if user del file            |here is minus
-        update_user_quota(user_id=user_id, file_size=-file_size)
-
-        session.delete(file)  # also deleting metadata from main_table
-        session.commit()
-
+    update_user_quota(user_id=user_id, file_size=-file_size, session=session)
+    session.delete(file)
+    session.commit()
 
     if os.path.exists(file_path):
-        date_dir = os.path.dirname(file_path)  # date_dir
-        month_dir = os.path.dirname(date_dir)  # month_dir
-        year_dir = os.path.dirname(month_dir)  # year_dir
+        date_dir = os.path.dirname(file_path)
+        month_dir = os.path.dirname(date_dir)
+        year_dir = os.path.dirname(month_dir)
 
         os.remove(file_path)
 
         if len(os.listdir(date_dir)) == 0:
             os.rmdir(date_dir)
-
         if len(os.listdir(month_dir)) == 0:
             os.rmdir(month_dir)
-
         if len(os.listdir(year_dir)) == 0:
             os.rmdir(year_dir)
 

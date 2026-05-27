@@ -94,43 +94,53 @@ def create_metadata(user_id: str, file_type: str, file_path: str, month_dir: str
     }
 
 def save_file(us_id, file_type: str, text=None, file_bytes=None, bytes_file_name=None, tele_file_id=None):
-    user_id = us_id  #better to make users_dir with theirs id(they are unique)
-    user_dir = os.path.join(data_path, str(user_id))
-    time = get_time_data()
-    os.makedirs(user_dir, exist_ok=True)  #makes dir for new user if not exists
-    os.makedirs(os.path.join(user_dir, time.get("year"), time.get("month")), exist_ok=True) #makes new month dir in users_dir if not exists
-    path_current_date_dir = os.path.join(user_dir, time.get("year"), time.get("month"), time.get("dir"))
-    os.makedirs(path_current_date_dir, exist_ok=True)
+    try:
+        create_request('/health', {})
 
-    if text:
-        file_path, file_name = save_txt(path_current_date_dir, text, time_json=time)
+        user_id = us_id  #better to make users_dir with theirs id(they are unique)
+        user_dir = os.path.join(data_path, str(user_id))
+        time = get_time_data()
+        os.makedirs(user_dir, exist_ok=True)  #makes dir for new user if not exists
+        os.makedirs(os.path.join(user_dir, time.get("year"), time.get("month")), exist_ok=True) #makes new month dir in users_dir if not exists
+        path_current_date_dir = os.path.join(user_dir, time.get("year"), time.get("month"), time.get("dir"))
+        os.makedirs(path_current_date_dir, exist_ok=True)
 
-    elif file_bytes:
-        if os.path.exists(os.path.join(path_current_date_dir, bytes_file_name)):
-            raise FileExistsError
+        if text:
+            file_path, file_name = save_txt(path_current_date_dir, text, time_json=time)
 
-        if len(bytes_file_name) > 15 and file_type == "document":
-            f_name, f_format = os.path.splitext(bytes_file_name)
-            bytes_file_name = f"{f_name[:10]}_{uuid.uuid4().hex[:3]}{f_format}"
+        elif file_bytes:
+            # if os.path.exists(os.path.join(path_current_date_dir, bytes_file_name)):
+            #     raise FileExistsError
 
-        file_path = os.path.join(path_current_date_dir, bytes_file_name)
-        file_name = bytes_file_name
-        write_file(file_path, file_bytes, mode="wb")
+            if len(bytes_file_name) >= 15 and file_type == "document":
+                f_name, f_format = os.path.splitext(bytes_file_name)
+                bytes_file_name = f"{f_name[:10]}_{uuid.uuid4().hex[:5]}{f_format}"
 
-    file_size = os.path.getsize(file_path)
+            elif len(bytes_file_name) < 14 and file_type == "document":
+                f_name, f_format = os.path.splitext(bytes_file_name)
+                bytes_file_name = f"{f_name}_{uuid.uuid4().hex[:2]}{f_format}"
 
-    meta_json = create_metadata(
-        user_id=str(user_id),
-        file_path=file_path,
-        month_dir=time.get("month"),
-        file_name=file_name,
-        tele_file_id=tele_file_id,
-        date_dir=time.get("dir"),
-        file_size=file_size,
-        file_type=file_type
-    )
+            file_path = os.path.join(path_current_date_dir, bytes_file_name)
+            file_name = bytes_file_name
+            write_file(file_path, file_bytes, mode="wb")
 
-    file_data, status = create_request('/load_metadata', input_json=meta_json)
-    create_request('/update_quota', {"user_id": str(us_id), "file_size": file_size})
+        file_size = os.path.getsize(file_path)
 
-    return file_name
+        meta_json = create_metadata(
+            user_id=str(user_id),
+            file_path=file_path,
+            month_dir=time.get("month"),
+            file_name=file_name,
+            tele_file_id=tele_file_id,
+            date_dir=time.get("dir"),
+            file_size=file_size,
+            file_type=file_type
+        )
+
+        create_request('/load_metadata', input_json=meta_json)
+        create_request('/update_quota', input_json={"user_id": str(us_id), "file_size": file_size})
+
+        return file_name
+
+    except ConnectionError:
+        raise ConnectionError
