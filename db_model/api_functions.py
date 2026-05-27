@@ -8,7 +8,6 @@ import requests
 
 
 SessionLocal = sessionmaker(bind=engine)
-session = SessionLocal()
 
 def row_to_dict(row, long_list: bool) -> dict | list[dict]:  #long_list = len(long_list)>1
     if not long_list:
@@ -27,107 +26,126 @@ def row_to_dict(row, long_list: bool) -> dict | list[dict]:  #long_list = len(lo
         ]
 
 def create_request(endpoint: str, input_json=dict | None):
-    if endpoint == "/load_metadata":
-        response = requests.post(f"http://127.0.0.1:8000{endpoint}", json=input_json)
-        resp_json = response.json()
-        resp_status = response.status_code
-        return resp_json, resp_status
+    try:
+        if endpoint == "/load_metadata":
+            response = requests.post(f"http://127.0.0.1:8000{endpoint}", json=input_json)
+            resp_json = response.json()
+            resp_status = response.status_code
+            return resp_json, resp_status
 
-    elif endpoint == '/date_dir_files':
-        response = requests.get(f"http://127.0.0.1:8000{endpoint}", params=input_json)
-        resp_json = response.json()
-        resp_status = response.status_code
-        return resp_json.get("date_dir_files"), resp_status
+        elif endpoint == '/date_dir_files':
+            response = requests.get(f"http://127.0.0.1:8000{endpoint}", params=input_json)
+            resp_json = response.json()
+            resp_status = response.status_code
+            return resp_json.get("date_dir_files"), resp_status
 
-    elif endpoint == '/file_data':
-        response = requests.get(f"http://127.0.0.1:8000{endpoint}", params=input_json)
-        resp_json = response.json()
-        resp_status = response.status_code
-        return resp_json.get("file_data"), resp_status
+        elif endpoint == '/file_data':
+            response = requests.get(f"http://127.0.0.1:8000{endpoint}", params=input_json)
+            resp_json = response.json()
+            resp_status = response.status_code
+            return resp_json.get("file_data"), resp_status
 
-    elif endpoint == '/get_quota':
-        response = requests.get(f"http://127.0.0.1:8000{endpoint}", params=input_json)
-        return response.json().get("used_space"), response.status_code
+        elif endpoint == '/get_quota':
+            response = requests.get(f"http://127.0.0.1:8000{endpoint}", params=input_json)
+            return response.json().get("used_space"), response.status_code
 
-    elif endpoint == '/update_quota':
-        response = requests.patch(f"http://127.0.0.1:8000{endpoint}", params=input_json)
-        return response.json(), response.status_code
+        elif endpoint == '/update_quota':
+            response = requests.patch(f"http://127.0.0.1:8000{endpoint}", params=input_json)
+            return response.json(), response.status_code
 
-    elif endpoint == '/delete_file':
-        response = requests.delete(f"http://127.0.0.1:8000{endpoint}", params=input_json)
-        return response.status_code
+        elif endpoint == '/delete_file':
+            response = requests.delete(f"http://127.0.0.1:8000{endpoint}", params=input_json)
+            return response.status_code
 
+    except requests.exceptions.ConnectionError:
+        raise ConnectionError("FastAPI is unavailable")
 
 
 def add_metadata(metadata_class):
-    index = MainTable(user_id=metadata_class.user_id, file_path=metadata_class.file_path,
-                      tele_file_id=metadata_class.tele_file_id, date_dir=metadata_class.date_dir,
-                      month_dir=metadata_class.month_dir, file_name=metadata_class.file_name,
-                      file_size=metadata_class.file_size, file_type=metadata_class.file_type)
+    with SessionLocal() as session:
+        index = MainTable(user_id=metadata_class.user_id, file_path=metadata_class.file_path,
+                          tele_file_id=metadata_class.tele_file_id, date_dir=metadata_class.date_dir,
+                          month_dir=metadata_class.month_dir, file_name=metadata_class.file_name,
+                          file_size=metadata_class.file_size, file_type=metadata_class.file_type)
 
 
-    session.add(index)
-    session.commit()
-    session.refresh(index)
+        session.add(index)
+        session.commit()
+        session.refresh(index)
 
-    return index.file_id, index.file_path
+        return index.file_id, index.file_path
 
 
 def get_date_dir_files(user_id: str, date_dir: str):
-    result = session.execute(
-        select(MainTable)
-        .where(
-            MainTable.user_id == user_id,
-            MainTable.date_dir == date_dir
-        )
-        .order_by(MainTable.date_creation.asc())
-    ).scalars().all()
+    with SessionLocal() as session:
+        result = session.execute(
+            select(MainTable)
+            .where(
+                MainTable.user_id == user_id,
+                MainTable.date_dir == date_dir
+            )
+            .order_by(MainTable.date_creation.asc())
+        ).scalars().all()
 
-    return result
+        return result
 
 
 def get_file_data(user_id: str, file_id: int):
-    result = session.execute(
-        select(MainTable)
-        .where(
-            MainTable.user_id == user_id,
-            MainTable.file_id == file_id
-        )
-    ).scalars().first()
+    with SessionLocal() as session:
+        result = session.execute(
+            select(MainTable)
+            .where(
+                MainTable.user_id == user_id,
+                MainTable.file_id == file_id
+            )
+        ).scalars().first()
 
-    return result
+        return result
 
 
 def get_user_quota(user_id: str):
-    return session.execute(
-        select(UserQuota).where(UserQuota.user_id == user_id)
-    ).scalars().first()
+    with SessionLocal() as session:
+        return session.execute(
+            select(UserQuota).where(UserQuota.user_id == user_id)
+        ).scalars().first()
 
 
 def update_user_quota(user_id: str, file_size: int):
-    quota = get_user_quota(user_id)
+    with SessionLocal() as session:
+        quota = get_user_quota(user_id)
 
-    if quota is None:  #if users first file
-        new_quota = UserQuota(user_id=user_id, used_space=file_size)
-        session.add(new_quota)
-    else:
-        quota.used_space += file_size  #file_size could be also negative
+        if quota is None:  #if users first file
+            new_quota = UserQuota(user_id=user_id, used_space=file_size)
+            session.add(new_quota)
+        else:
+            quota.used_space += file_size  #file_size could be also negative
 
-    session.commit()
+        session.commit()
 
 
 def remove_file(user_id: str, file_id: int):
-    file = get_file_data(user_id=user_id, file_id=file_id)  #class from main_table
+    with SessionLocal() as session:
+        file = get_file_data(user_id=user_id, file_id=file_id)  #class from main_table
 
-    if file is None:
-        return None
+        if file is None:
+            return None
 
-    if os.path.exists(file.file_path):
-        date_dir = os.path.dirname(file.file_path)  # date_dir
+        file_path = file.file_path
+        file_size = file.file_size
+
+        # updating quota if user del file            |here is minus
+        update_user_quota(user_id=user_id, file_size=-file_size)
+
+        session.delete(file)  # also deleting metadata from main_table
+        session.commit()
+
+
+    if os.path.exists(file_path):
+        date_dir = os.path.dirname(file_path)  # date_dir
         month_dir = os.path.dirname(date_dir)  # month_dir
         year_dir = os.path.dirname(month_dir)  # year_dir
 
-        os.remove(file.file_path)
+        os.remove(file_path)
 
         if len(os.listdir(date_dir)) == 0:
             os.rmdir(date_dir)
@@ -137,11 +155,5 @@ def remove_file(user_id: str, file_id: int):
 
         if len(os.listdir(year_dir)) == 0:
             os.rmdir(year_dir)
-
-    #updating quota if user del file             |here is minus
-    update_user_quota(user_id=user_id, file_size=-file.file_size)
-
-    session.delete(file)  #also deleting metadata from main_table
-    session.commit()
 
     return True

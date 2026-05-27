@@ -37,8 +37,13 @@ def load_content_type(content_type, str_cont_type: str, user_id: str, chat_id: s
     else:
         fl_name = create_f_name(str_cont_type)
 
-    file_name = save_file(user_id, tele_file_id=file_id, file_bytes=downloaded_bytes,
-                        bytes_file_name=fl_name, file_type=str_cont_type)
+    try:
+        file_name = save_file(user_id, tele_file_id=file_id, file_bytes=downloaded_bytes,
+                            bytes_file_name=fl_name, file_type=str_cont_type)
+
+    except ConnectionError:
+        BOT.send_message(chat_id, "🟥 Service is temporarily unavailable, try again later")
+
 
     BOT.send_message(chat_id, f"{str_cont_type.capitalize()} was saved successfully✅ as '{file_name}'")
 
@@ -268,14 +273,14 @@ def handle_cancel_delete(call):
 
 @BOT.message_handler(func=lambda message: message.text in COMMANDS)
 def reaction_to_button(message):
-    if message.text == "📤 Upload":
-        BOT.send_message(message.chat.id,
-                         "❗Please note that if you send a file with a long name (more than 15 characters), its name will be truncated.")
-        BOT.send_message(message.chat.id, "So now send a text or file so i can save it📁")
-        BOT.register_next_step_handler(message, load_data)
+    try:
+        if message.text == "📤 Upload":
+            BOT.send_message(message.chat.id,
+                             "❗Please note that if you send a file with a long name (more than 15 characters), its name will be truncated.")
+            BOT.send_message(message.chat.id, "So now send a text or file so i can save it📁")
+            BOT.register_next_step_handler(message, load_data)
 
-    elif message.text == "📁 My files":
-        try:
+        elif message.text == "📁 My files":
             months_dir_path = show_month_dirs(message.from_user.id)  #returns path to the months_dirs
             inline = inline_buttons(dir_path=months_dir_path, call_back="month_dir")
 
@@ -285,12 +290,7 @@ def reaction_to_button(message):
                 reply_markup=inline
             )
 
-        except FileNotFoundError:
-            BOT.send_message(message.chat.id,
-                             "You haven't send any file yet")
-
-    elif message.text == "🗑️ Delete":
-        try:
+        elif message.text == "🗑️ Delete":
             months_dir_path = show_month_dirs(message.from_user.id)
             inline = inline_buttons(dir_path=months_dir_path, call_back="month_dir_delete")
             BOT.send_message(
@@ -298,42 +298,50 @@ def reaction_to_button(message):
                 "Select a folder to delete from⤵️",
                 reply_markup=inline
             )
-        except FileNotFoundError:
-            BOT.send_message(message.chat.id, "You haven't sent any files yet")
 
 
-    elif message.text == "Back⬇️":
-        BOT.send_message(
-            message.chat.id,
-            "All options⤵️",
-            reply_markup=create_keyboard_panel()
-        )
+        elif message.text == "Back⬇️":
+            BOT.send_message(
+                message.chat.id,
+                "All options⤵️",
+                reply_markup=create_keyboard_panel()
+            )
 
 
-    elif message.text == "❓ Help":
+        elif message.text == "❓ Help":
 
-        used_space, status = create_request('/get_quota', {"user_id": str(message.from_user.id)})
+            used_space, status = create_request('/get_quota', {"user_id": str(message.from_user.id)})
 
-        used_mb = round(used_space / (1024 * 1024), 2)
+            used_mb = round(used_space / (1024 * 1024), 2)
 
-        BOT.send_message(
+            BOT.send_message(
 
-            message.chat.id,
+                message.chat.id,
 
-            f"❓ Help\n\n"
-            f"📁 My files — browse and retrieve your saved files\n\n"
-            f"📤 Upload — save content (max 15MB per file):\n"
-            f"     • Text\n"
-            f"     • Documents\n"
-            f"     • Photos\n"
-            f"     • Video\n"
-            f"     • Video notes (circles)\n"
-            f"     • Audio\n"
-            f"     • Voice messages\n\n"
-            f"🗑️ Delete — delete saved files\n\n"
-            f"💾 Storage: {used_mb}MB of 250MB used"
+                f"❓ Help\n\n"
+                f"📁 My files — browse and retrieve your saved files\n\n"
+                f"📤 Upload — save content (max 15MB per file):\n"
+                f"     • Text\n"
+                f"     • Documents\n"
+                f"     • Photos\n"
+                f"     • Video\n"
+                f"     • Video notes (circles)\n"
+                f"     • Audio\n"
+                f"     • Voice messages\n\n"
+                f"🗑️ Delete — delete saved files\n\n"
+                f"💾 Storage: {used_mb}MB of 250MB used"
 
-        )
+            )
+
+    except FileNotFoundError:
+        BOT.send_message(message.chat.id,
+                         "You haven't send any file yet")
+
+    except ConnectionError:
+        BOT.send_message(message.chat.id, "🟥 Service is temporarily unavailable, try again later")
+        return
+
+
 
 #filtration
 @BOT.message_handler(func=lambda message: True, content_types=['text', 'photo', 'voice', 'document', 'video_note', 'audio'])
