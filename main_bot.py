@@ -1,6 +1,8 @@
 import os
 from dotenv import load_dotenv
 import telebot
+from sqlalchemy.util.queue import Empty
+
 from main_bot_package.telebot_functions import (create_keyboard_panel, inline_buttons,
                                                 send_inline_buttons, text_file_send_keyboard, delete_inline_buttons, del_file_check_keyboard)
 from main_bot_package.file_date_functions import save_file, show_month_dirs, create_month_path, return_file_as, create_f_name
@@ -13,6 +15,16 @@ BOT = telebot.TeleBot(bot_TOKEN)
 COMMANDS = ["📁 My files", "📤 Upload", "🗑️ Delete", "❓ Help", "Back⬇️"]
 UNSUPPORTED_TYPES = ['sticker', 'location', 'contact', 'poll', 'animation']
 SUPPORTED_TYPES = ['document', 'video_note', 'photo', 'video', 'audio', 'voice']
+
+def handle_errors(func):
+    def wrapper(call):
+        try:
+            func(call)
+        except ConnectionError:
+            BOT.send_message(call.message.chat.id, "🟥 Service is temporarily unavailable, try again later")
+        except Exception as e:
+            BOT.send_message(call.message.chat.id, "🟥 Something went wrong, try again later")
+    return wrapper
 
 def upload_file_types(message, us_content_type):
     f_types = {
@@ -61,7 +73,7 @@ def load_data(message):
         us_id = message.from_user.id
 
         if user_content_type in UNSUPPORTED_TYPES:  #currently takes text, documents only.
-            BOT.send_message(chat_id, "❌ This type of content is not supported\nTry sending a file, photo, video, audio or text")
+            BOT.send_message(chat_id, "🟥 This type of content is not supported\nTry sending a file, photo, video, audio or text")
             return
 
         elif message.text:
@@ -89,15 +101,15 @@ def load_data(message):
             BOT.send_message(message.chat.id, "Got it, may take a lil time⌛ to save it, please wait")
             load_content_type(file_type, str_cont_type=user_content_type, user_id=us_id, chat_id=chat_id)
 
-
     except TypeError as e:
-        BOT.send_message(message.chat.id, "Unsupported Content, send something else")
+        BOT.send_message(message.chat.id, "🟥Unsupported Content, send something else")
         BOT.register_next_step_handler(message, load_data)
         raise e
 
     except Exception as e:
         BOT.send_message(message.chat.id, "🟥 Sorry something went wrong, try again later")
         raise e #will be replaced
+
 
 def full_storage(message_chat_id: str, used_space: int):
     BOT.send_message(
@@ -133,10 +145,8 @@ def send_file_as(response, txt_file_path):
 
     except FileNotFoundError:
         BOT.send_message(response.chat.id, "🟥 File not found, it may have been deleted")
-
     except UnicodeDecodeError:
         BOT.send_message(response.chat.id, "🟥 Could not read file, unsupported encoding")
-
 
 
 @BOT.message_handler(commands=['start'])
@@ -151,13 +161,12 @@ def start(message):
     )
 
 @BOT.callback_query_handler(func=lambda call: call.data.startswith("month_dir:"))
+@handle_errors
 def handle_month(call):
     BOT.answer_callback_query(call.id)
-
     month = call.data.split(":")[1]
     month_dir_path = create_month_path(month=month, user_id=call.from_user.id)
     inline = inline_buttons(dir_path=month_dir_path, call_back="date_dir")
-
     BOT.send_message(
         call.message.chat.id,
         f"Select folder from 📁{month} directory⤵️",
@@ -166,19 +175,13 @@ def handle_month(call):
 
 
 @BOT.callback_query_handler(func=lambda call: call.data.startswith("date_dir:"))
+@handle_errors
 def handle_date_dir(call):
     BOT.answer_callback_query(call.id)
-
     date_dir = call.data.split(":")[1]
     user_id = call.from_user.id
     input_json = {"user_id": user_id, "date_dir": date_dir}
-    try:
-        date_dir_files_list, status = create_request(endpoint='/date_dir_files', input_json=input_json)
-
-    except ConnectionError:
-        BOT.send_message(call.message.chat.id, "🟥 Service is temporarily unavailable, try again later")
-        return
-
+    date_dir_files_list, status = create_request(endpoint='/date_dir_files', input_json=input_json)
     date_dir_files_fresh = send_inline_buttons(date_dir_files_list)
     BOT.send_message(
         call.message.chat.id,
@@ -188,25 +191,18 @@ def handle_date_dir(call):
 
 
 @BOT.callback_query_handler(func=lambda call: call.data.startswith("Send me:"))
+@handle_errors
 def handle_send_file(call):
     BOT.answer_callback_query(call.id)
-
     file_id = call.data.split(":")[1]
     user_id = call.from_user.id
     input_json = {"user_id": user_id, "file_id": file_id}
-    try:
-        file_json, status = create_request(endpoint='/file_data', input_json=input_json)
-
-    except ConnectionError:
-        BOT.send_message(call.message.chat.id, "🟥 Service is temporarily unavailable, try again later")
-        return
-
+    file_json, status = create_request(endpoint='/file_data', input_json=input_json)
     tele_file_id = file_json.get("tele_file_id")
     file_path = file_json.get("file_path")
     file_type = file_json.get("file_type")
 
     if file_json.get("file_name").endswith('.txt'):
-
         send_file_keyboard = text_file_send_keyboard()
         send_file_response = BOT.send_message(
             call.message.chat.id,
@@ -227,9 +223,10 @@ def handle_send_file(call):
 
     if file_type in send_methods:
         send_methods[file_type]()
-        return
+
 
 @BOT.callback_query_handler(func=lambda call: call.data.startswith("month_dir_delete:"))
+@handle_errors
 def handle_month_dir_delete(call):
     BOT.answer_callback_query(call.id)
     month = call.data.split(":")[1]
@@ -242,19 +239,13 @@ def handle_month_dir_delete(call):
     )
 
 @BOT.callback_query_handler(func=lambda call: call.data.startswith("date_dir_delete:"))
+@handle_errors
 def handle_date_dir_delete(call):
     BOT.answer_callback_query(call.id)
     date_dir = call.data.split(":")[1]
     user_id = call.from_user.id
-    try:
-        input_json = {"user_id": user_id, "date_dir": date_dir}
-        date_dir_files_list, status = create_request(endpoint='/date_dir_files', input_json=input_json)
-
-    except ConnectionError:
-        BOT.send_message(call.message.chat.id, "🟥 Service is temporarily unavailable, try again later")
-        return
-
-
+    input_json = {"user_id": user_id, "date_dir": date_dir}
+    date_dir_files_list, status = create_request(endpoint='/date_dir_files', input_json=input_json)
     inline = delete_inline_buttons(date_dir_files_list)
     BOT.send_message(
         call.message.chat.id,
@@ -262,41 +253,45 @@ def handle_date_dir_delete(call):
         reply_markup=inline
     )
 
+
+
 @BOT.callback_query_handler(func=lambda call: call.data.startswith("Delete:"))
+@handle_errors
 def handle_delete_confirm(call):
     BOT.answer_callback_query(call.id)
     file_id = call.data.split(":")[1]
     delete_keyboard = del_file_check_keyboard(file_id=file_id)
-
     BOT.send_message(
         call.message.chat.id,
         "Are you sure you want to delete this file?",
         reply_markup=delete_keyboard
     )
 
+
 @BOT.callback_query_handler(func=lambda call: call.data.startswith("ConfirmDelete:"))
+@handle_errors
 def handle_confirm_delete(call):
     BOT.answer_callback_query(call.id)
     file_id = call.data.split(":")[1]
     user_id = call.from_user.id
-    try:
-        status = create_request('/delete_file', {"user_id": user_id, "file_id": file_id})
-
-    except ConnectionError:
-        BOT.send_message(call.message.chat.id, "🟥 Service is temporarily unavailable, try again later")
-        return
+    status = create_request('/delete_file', {"user_id": user_id, "file_id": file_id})
 
     if status == 204:
         BOT.send_message(call.message.chat.id, "✅ File deleted successfully")
-
     else:
         BOT.send_message(call.message.chat.id, "🟥 Something went wrong, try again later")
 
 
 @BOT.callback_query_handler(func=lambda call: call.data == "CancelDelete")
 def handle_cancel_delete(call):
-    BOT.answer_callback_query(call.id)
-    BOT.send_message(call.message.chat.id, "Deletion cancelled✅")
+    try:
+        BOT.answer_callback_query(call.id)
+        BOT.send_message(call.message.chat.id, "Deletion cancelled✅")
+
+    except Exception as e:
+        BOT.send_message(call.message.chat.id, "🟥 Something went wrong, try again later")
+        raise e
+
 
 @BOT.message_handler(func=lambda message: message.text in COMMANDS)
 def reaction_to_button(message):
@@ -362,12 +357,16 @@ def reaction_to_button(message):
 
     except FileNotFoundError:
         BOT.send_message(message.chat.id,
-                         "You haven't send any file yet")
+                         "⚠️You haven't send any file yet")
+        return
 
     except ConnectionError:
         BOT.send_message(message.chat.id, "🟥 Service is temporarily unavailable, try again later")
         return
 
+    except Exception as e:
+        BOT.send_message(message.chat.id, "🟥 Something went wrong, try again later")
+        raise e
 
 
 #filtration
@@ -378,7 +377,6 @@ def handle_not_supported(message):
         "No such option, use one of those⤵️",
         reply_markup=create_keyboard_panel()
     )
-
 
 
 BOT.polling()

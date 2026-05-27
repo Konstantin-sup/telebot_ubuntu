@@ -5,7 +5,6 @@ from sqlalchemy import select
 from datetime import datetime
 import requests
 
-
 def row_to_dict(row, long_list: bool) -> dict | list[dict]:  #long_list = len(long_list)>1
     if not long_list:
         return {
