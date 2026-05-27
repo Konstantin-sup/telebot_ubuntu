@@ -43,6 +43,7 @@ def load_content_type(content_type, str_cont_type: str, user_id: str, chat_id: s
 
     except ConnectionError:
         BOT.send_message(chat_id, "🟥 Service is temporarily unavailable, try again later")
+        return
 
 
     BOT.send_message(chat_id, f"{str_cont_type.capitalize()} was saved successfully✅ as '{file_name}'")
@@ -94,14 +95,6 @@ def load_data(message):
         BOT.register_next_step_handler(message, load_data)
         raise e
 
-    # except FileExistsError:
-    #     BOT.send_message(
-    #         message.chat.id,
-    #         "You have already send this file today",
-    #         reply_markup=create_keyboard_panel()
-    #     )
-    #     return
-
     except Exception as e:
         BOT.send_message(message.chat.id, "🟥 Sorry something went wrong, try again later")
         raise e #will be replaced
@@ -115,27 +108,35 @@ def full_storage(message_chat_id: str, used_space: int):
     )
 
 def send_file_as(response, txt_file_path):
-    if response.text == "As text":
-        file_text = return_file_as(file_path=txt_file_path, mode="text")
-        BOT.send_message(response.chat.id, file_text)
-        return
+    try:
+        if response.text == "As text":
+            file_text = return_file_as(file_path=txt_file_path, mode="text")
+            BOT.send_message(response.chat.id, file_text)
+            return
 
-    elif response.text == "As '.txt' file📃":
-        txt_file = return_file_as(file_path=txt_file_path, mode="file")
-        BOT.send_document(response.chat.id, txt_file, caption="Your .txt file")
-        return
+        elif response.text == "As '.txt' file📃":
+            txt_file = return_file_as(file_path=txt_file_path, mode="file")
+            BOT.send_document(response.chat.id, txt_file, caption="Your .txt file")
+            return
 
-    elif response.text == "Back⬇️":
-        all_options = create_keyboard_panel()
-        BOT.send_message(
-            response.chat.id,
-            "All options⤵️",
-            reply_markup=all_options
-        )
-        return
+        elif response.text == "Back⬇️":
+            all_options = create_keyboard_panel()
+            BOT.send_message(
+                response.chat.id,
+                "All options⤵️",
+                reply_markup=all_options
+            )
+            return
 
-    else:
-        BOT.send_message(response.chat.id, "No such option")
+        else:
+            BOT.send_message(response.chat.id, "No such option")
+
+    except FileNotFoundError:
+        BOT.send_message(response.chat.id, "🟥 File not found, it may have been deleted")
+
+    except UnicodeDecodeError:
+        BOT.send_message(response.chat.id, "🟥 Could not read file, unsupported encoding")
+
 
 
 @BOT.message_handler(commands=['start'])
@@ -171,7 +172,12 @@ def handle_date_dir(call):
     date_dir = call.data.split(":")[1]
     user_id = call.from_user.id
     input_json = {"user_id": user_id, "date_dir": date_dir}
-    date_dir_files_list, status = create_request(endpoint='/date_dir_files', input_json=input_json)
+    try:
+        date_dir_files_list, status = create_request(endpoint='/date_dir_files', input_json=input_json)
+
+    except ConnectionError:
+        BOT.send_message(call.message.chat.id, "🟥 Service is temporarily unavailable, try again later")
+        return
 
     date_dir_files_fresh = send_inline_buttons(date_dir_files_list)
     BOT.send_message(
@@ -188,10 +194,27 @@ def handle_send_file(call):
     file_id = call.data.split(":")[1]
     user_id = call.from_user.id
     input_json = {"user_id": user_id, "file_id": file_id}
-    file_json, status = create_request(endpoint='/file_data', input_json=input_json)
+    try:
+        file_json, status = create_request(endpoint='/file_data', input_json=input_json)
+
+    except ConnectionError:
+        BOT.send_message(call.message.chat.id, "🟥 Service is temporarily unavailable, try again later")
+        return
+
     tele_file_id = file_json.get("tele_file_id")
     file_path = file_json.get("file_path")
     file_type = file_json.get("file_type")
+
+    if file_json.get("file_name").endswith('.txt'):
+
+        send_file_keyboard = text_file_send_keyboard()
+        send_file_response = BOT.send_message(
+            call.message.chat.id,
+            "Send .txt as⤵️",
+            reply_markup=send_file_keyboard
+        )
+        BOT.register_next_step_handler(send_file_response, send_file_as, file_path)
+        return
 
     send_methods = {
         "photo": lambda: BOT.send_photo(call.message.chat.id, tele_file_id, caption="Your photo"),
@@ -205,15 +228,6 @@ def handle_send_file(call):
     if file_type in send_methods:
         send_methods[file_type]()
         return
-
-    #if txt
-    send_file_keyboard = text_file_send_keyboard()
-    send_file_response = BOT.send_message(
-        call.message.chat.id,
-        "Send .txt as⤵️",
-        reply_markup=send_file_keyboard
-    )
-    BOT.register_next_step_handler(send_file_response, send_file_as, file_path)
 
 @BOT.callback_query_handler(func=lambda call: call.data.startswith("month_dir_delete:"))
 def handle_month_dir_delete(call):
@@ -232,8 +246,15 @@ def handle_date_dir_delete(call):
     BOT.answer_callback_query(call.id)
     date_dir = call.data.split(":")[1]
     user_id = call.from_user.id
-    input_json = {"user_id": user_id, "date_dir": date_dir}
-    date_dir_files_list, status = create_request(endpoint='/date_dir_files', input_json=input_json)
+    try:
+        input_json = {"user_id": user_id, "date_dir": date_dir}
+        date_dir_files_list, status = create_request(endpoint='/date_dir_files', input_json=input_json)
+
+    except ConnectionError:
+        BOT.send_message(call.message.chat.id, "🟥 Service is temporarily unavailable, try again later")
+        return
+
+
     inline = delete_inline_buttons(date_dir_files_list)
     BOT.send_message(
         call.message.chat.id,
@@ -258,7 +279,12 @@ def handle_confirm_delete(call):
     BOT.answer_callback_query(call.id)
     file_id = call.data.split(":")[1]
     user_id = call.from_user.id
-    status = create_request('/delete_file', {"user_id": user_id, "file_id": file_id})
+    try:
+        status = create_request('/delete_file', {"user_id": user_id, "file_id": file_id})
+
+    except ConnectionError:
+        BOT.send_message(call.message.chat.id, "🟥 Service is temporarily unavailable, try again later")
+        return
 
     if status == 204:
         BOT.send_message(call.message.chat.id, "✅ File deleted successfully")

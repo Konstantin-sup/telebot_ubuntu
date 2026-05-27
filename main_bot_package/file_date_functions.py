@@ -37,6 +37,12 @@ def create_f_name(str_content_type: str):
 
     return names_dict.get(str_content_type)
 
+def generate_file_name(file_name: str) -> str:
+    f_name, f_format = os.path.splitext(file_name)
+    if len(file_name) >= 15:
+        return f"{f_name[:10]}_{uuid.uuid4().hex[:5]}{f_format}"
+
+    return f"{f_name}_{uuid.uuid4().hex[:2]}{f_format}"
 
 def get_time_data():  #returns always current time, needs on server where requests 24/7
     now = datetime.now()
@@ -109,16 +115,8 @@ def save_file(us_id, file_type: str, text=None, file_bytes=None, bytes_file_name
             file_path, file_name = save_txt(path_current_date_dir, text, time_json=time)
 
         elif file_bytes:
-            # if os.path.exists(os.path.join(path_current_date_dir, bytes_file_name)):
-            #     raise FileExistsError
-
-            if len(bytes_file_name) >= 15 and file_type == "document":
-                f_name, f_format = os.path.splitext(bytes_file_name)
-                bytes_file_name = f"{f_name[:10]}_{uuid.uuid4().hex[:5]}{f_format}"
-
-            elif len(bytes_file_name) < 14 and file_type == "document":
-                f_name, f_format = os.path.splitext(bytes_file_name)
-                bytes_file_name = f"{f_name}_{uuid.uuid4().hex[:2]}{f_format}"
+            if file_type == "document":
+                bytes_file_name = generate_file_name(bytes_file_name)
 
             file_path = os.path.join(path_current_date_dir, bytes_file_name)
             file_name = bytes_file_name
@@ -144,3 +142,4 @@ def save_file(us_id, file_type: str, text=None, file_bytes=None, bytes_file_name
 
     except ConnectionError:
         raise ConnectionError
+
