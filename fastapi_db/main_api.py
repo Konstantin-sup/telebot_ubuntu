@@ -17,6 +17,10 @@ class Metadata(BaseModel):
     file_type: str
 
 
+@app.get('/health')
+def health():
+    return JSONResponse(status_code=200, content={"ok": True})
+
 @app.post('/load_metadata')
 def load_file_data(file_data: Metadata):
     file_id, file_path = add_metadata(file_data)

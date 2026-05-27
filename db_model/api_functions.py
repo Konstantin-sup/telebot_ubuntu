@@ -33,6 +33,11 @@ def create_request(endpoint: str, input_json=dict | None):
             resp_status = response.status_code
             return resp_json, resp_status
 
+        elif endpoint == "/health":
+            response = requests.post(f"http://127.0.0.1:8000{endpoint}")
+            resp_status = response.status_code
+            return resp_status
+
         elif endpoint == '/date_dir_files':
             response = requests.get(f"http://127.0.0.1:8000{endpoint}", params=input_json)
             resp_json = response.json()
