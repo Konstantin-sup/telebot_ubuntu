@@ -18,5 +18,6 @@ class MainTable(Base):
     date_dir: Mapped[str] = mapped_column(VARCHAR(255), nullable=False, unique=False)
     file_size: Mapped[int] = mapped_column(BIGINT, nullable=False)
     file_type: Mapped[str] = mapped_column(VARCHAR(100), unique=False, nullable=False, server_default='document')  #server_default needed so db doesn't fall before tests
-
+    media_group_id: Mapped[str] = mapped_column(VARCHAR(255), nullable=True)
+    media_group_name: Mapped[str] = mapped_column(VARCHAR(125), nullable=True)
     
