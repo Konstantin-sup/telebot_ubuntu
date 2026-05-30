@@ -15,6 +15,8 @@ BOT = telebot.TeleBot(bot_TOKEN)
 COMMANDS = ["📁 My files", "📤 Upload", "🗑️ Delete", "❓ Help", "Back⬇️"]
 UNSUPPORTED_TYPES = ['sticker', 'location', 'contact', 'poll', 'animation']
 SUPPORTED_TYPES = ['document', 'video_note', 'photo', 'video', 'audio', 'voice']
+active_upload_users = set() #needeble when user sends media_group without clicking on "📤 Upload"
+answered_groups = set()  #needeble for returning message if user sended media_group without command
 
 def handle_errors(func):
     def wrapper(call):
@@ -64,6 +66,10 @@ def load_content_type(content_type, str_cont_type: str, user_id: str, chat_id: s
 def load_data(message):
     if message.text in COMMANDS:
         reaction_to_button(message)
+        return
+
+    if message.media_group_id is not None:
+        BOT.send_message(message.chat.id, f"Its {message.content_type}")
         return
 
     try:
@@ -298,8 +304,11 @@ def handle_cancel_delete(call):
 
 @BOT.message_handler(func=lambda message: message.text in COMMANDS)
 def reaction_to_button(message):
+    active_upload_users.discard(message.from_user.id)
+    answered_groups.clear()
     try:
         if message.text == "📤 Upload":
+            active_upload_users.add(message.from_user.id)
             BOT.send_message(message.chat.id,
                              "❗Please note that if you send a file with a long name (more than 15 characters), its name will be truncated.")
             BOT.send_message(message.chat.id, "So now send a text or file so i can save it📁")
@@ -370,6 +379,18 @@ def reaction_to_button(message):
     except Exception as e:
         BOT.send_message(message.chat.id, "🟥 Something went wrong, try again later")
         raise e
+
+@BOT.message_handler(func=lambda message: message.media_group_id is not None,
+                     content_types=['photo', 'video'])
+
+def handle_media_group(message):
+    if message.from_user.id in active_upload_users:
+        load_data(message)
+
+    else:
+        if message.media_group_id not in answered_groups:
+            answered_groups.add(message.media_group_id)
+            handle_not_supported(message)
 
 
 #filtration
