@@ -106,6 +106,9 @@ def load_data(message):
         BOT.register_next_step_handler(message, load_data)
         raise e
 
+    except ConnectionError:
+        BOT.send_message(message.chat.id, "🟥 Service is temporarily unavailable, try again later")
+
     except Exception as e:
         BOT.send_message(message.chat.id, "🟥 Sorry something went wrong, try again later")
         raise e #will be replaced
