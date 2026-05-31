@@ -106,18 +106,6 @@ def load_data(message):
                 return
 
             if used_space + file_size > 250 * 1024 * 1024:  #cheking if there place for the next fl
-                if message.media_group_id:
-                    group_files, status = create_request('/group_files',
-                                                         {"user_id": str(us_id),
-                                                          "media_group_id": message.media_group_id})
-                    if group_files:
-                        group_name = group_files[0].get("media_group_name")
-                        BOT.send_message(chat_id,
-                                         f"⚠️ Not enough space\n"
-                                         f"Partially saved as '{group_name}'\n"
-                                         f"Delete files to free up space")
-                        return
-
                 full_storage(message_chat_id=chat_id, used_space=used_space)
                 return
 
