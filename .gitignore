@@ -10,3 +10,5 @@ __pycache__
 DATA
 
 alembic.ini
+
+bot_logs

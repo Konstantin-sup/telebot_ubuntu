@@ -7,6 +7,8 @@ from main_bot_package.telebot_functions import (create_keyboard_panel, inline_bu
 
 from main_bot_package.file_date_functions import save_file, show_month_dirs, create_month_path, return_file_as, create_f_name
 from db_model.api_functions import create_request
+from logs_config import logger
+
 
 load_dotenv()  #loading .env
 
@@ -23,9 +25,15 @@ def handle_errors(func):
         try:
             func(call)
         except ConnectionError:
-            BOT.send_message(call.message.chat.id, "🟥 Service is temporarily unavailable, try again later")
+            chat_id = call.message.chat.id if hasattr(call, 'message') else call.chat.id
+            logger.error(f"user_id:[{call.from_user.id}] Api connection error", exc_info=True)
+            BOT.send_message(chat_id, "🟥 Service is temporarily unavailable, try again later")
+
         except Exception as e:
-            BOT.send_message(call.message.chat.id, "🟥 Something went wrong, try again later")
+            chat_id = call.message.chat.id if hasattr(call, 'message') else call.chat.id
+            logger.error(f"user_id:[{call.from_user.id}] Unexpected error", exc_info=True)
+            BOT.send_message(chat_id, "🟥 Something went wrong, try again later")
+
     return wrapper
 
 def upload_file_types(message, us_content_type):
@@ -58,19 +66,21 @@ def load_content_type(content_type, str_cont_type: str, user_id: str, chat_id: s
                             bytes_file_name=fl_name, file_type=str_cont_type, media_group_name=media_group_name, media_group_id=media_group_id)
 
     except ConnectionError:
+        logger.error(f"user_id:[{user_id}] Api connection error", exc_info=True)
         BOT.send_message(chat_id, "🟥 Service is temporarily unavailable, try again later")
         return
 
     except Exception as e:
+        logger.error(f"user_id:[{user_id}] Unexpected error", exc_info=True)
         BOT.send_message(chat_id, "🟥 Sorry something went wrong, try again later")
-        raise e  # will be replaced
 
-    if file_name.startswith("album"):  #could also return media_group_name if not none
+    if file_name.startswith("album"):#could also return media_group_name if not none
+        logger.info(f"user_id:[{user_id}] Saved {str_cont_type} as part of media_group_id:[{media_group_id}]")
         BOT.send_message(chat_id, f"Saved✅ as part of '{file_name}'")
         return
 
     BOT.send_message(chat_id, f"{str_cont_type.capitalize()} was saved successfully✅ as '{file_name}'")
-
+    logger.info(f"user_id:[{user_id}] Saved {str_cont_type} with file_name:[{file_name}]")
 
 def load_data(message):
     if message.text in COMMANDS:
@@ -78,12 +88,14 @@ def load_data(message):
         return
 
     try:
-        used_space, status = create_request('/get_quota', {"user_id": str(message.from_user.id)})
         user_content_type = message.content_type
         chat_id = message.chat.id
         us_id = message.from_user.id
+        used_space, status = create_request('/get_quota', {"user_id": str(message.from_user.id)})
+        logger.info(f"user_id:[{us_id}] Sended request to '/get_quota'")
 
-        if user_content_type in UNSUPPORTED_TYPES:  #currently takes text, documents only.
+        if user_content_type in UNSUPPORTED_TYPES:#currently takes text, documents only.
+            logger.warning(f"user_id:[{us_id}] Sended unsupported type:[{user_content_type}")
             BOT.send_message(chat_id, "🟥 This type of content is not supported\nTry sending a file, photo, video, audio or text")
             return
 
@@ -96,16 +108,19 @@ def load_data(message):
 
             fl_name = save_file(us_id, file_type="text", text=message.text)
             BOT.send_message(chat_id, f"Text was saved successfully✅ as '{fl_name}'")
+            logger.info(f"user_id:[{us_id}] Saved text as file_name:[{fl_name}]")
 
         elif user_content_type in SUPPORTED_TYPES:
             file_type = upload_file_types(message, user_content_type)
             file_size = file_type.file_size
 
             if file_size > 15 * 1024 * 1024:  ## 15 MB
+                logger.warning(f"user_id:[{us_id}] Sended heavy file file_type:[{user_content_type}]")
                 BOT.send_message(message.chat.id, "File is too heavy, max(15mb)")
                 return
 
             if used_space + file_size > 250 * 1024 * 1024:  #cheking if there place for the next fl
+                logger.warning(f"user_id:[{us_id}] Has full quota")
                 full_storage(message_chat_id=chat_id, used_space=used_space)
                 return
 
@@ -121,16 +136,17 @@ def load_data(message):
                               chat_id=chat_id, media_group_id=media_group_id, media_group_name=media_group_name)
 
     except TypeError as e:
+        logger.error(f"user_id:[{us_id}] TypeError", exc_info=True)
         BOT.send_message(message.chat.id, "🟥Unsupported Content, send something else")
         BOT.register_next_step_handler(message, load_data)
-        raise e
 
     except ConnectionError:
+        logger.error(f"user_id:[{us_id}] Api connection error", exc_info=True)
         BOT.send_message(message.chat.id, "🟥 Service is temporarily unavailable, try again later")
 
     except Exception as e:
+        logger.error(f"user_id:[{us_id}] Unexpected error", exc_info=True)
         BOT.send_message(message.chat.id, "🟥 Sorry something went wrong, try again later")
-        raise e #will be replaced
 
 
 def full_storage(message_chat_id: str, used_space: int):
@@ -145,10 +161,12 @@ def send_file_as(response, txt_file_path):
     try:
         if response.text == "As text":
             file_text = return_file_as(file_path=txt_file_path, mode="text")
+            logger.info(f"file_path:[{txt_file_path}] was chosen to be sended as 'text'")
             BOT.send_message(response.chat.id, file_text)
             return
 
         elif response.text == "As '.txt' file📃":
+            logger.info(f"file_path:[{txt_file_path}] was chosen to be sended as '.txt'")
             txt_file = return_file_as(file_path=txt_file_path, mode="file")
             BOT.send_document(response.chat.id, txt_file, caption="Your .txt file")
             return
@@ -166,8 +184,11 @@ def send_file_as(response, txt_file_path):
             BOT.send_message(response.chat.id, "No such option")
 
     except FileNotFoundError:
+        logger.error(f"file_path:[{txt_file_path}] FileNotFound", exc_info=True)
         BOT.send_message(response.chat.id, "🟥 File not found, it may have been deleted")
+
     except UnicodeDecodeError:
+        logger.error(f"file_path:[{txt_file_path}] DecodeError", exc_info=True)
         BOT.send_message(response.chat.id, "🟥 Could not read file, unsupported encoding")
 
 
@@ -204,6 +225,7 @@ def handle_date_dir(call):
     user_id = call.from_user.id
     input_json = {"user_id": user_id, "date_dir": date_dir}
     date_dir_files_list, status = create_request(endpoint='/date_dir_files', input_json=input_json)
+    logger.info(f"user_id:[{user_id}] Sended request to '/date_dir_files' params:[{input_json}]")
     date_dir_files_fresh = send_inline_buttons(date_dir_files_list)
     BOT.send_message(
         call.message.chat.id,
@@ -220,6 +242,7 @@ def handle_send_file(call):
     user_id = call.from_user.id
     input_json = {"user_id": user_id, "file_id": file_id}
     file_json, status = create_request(endpoint='/file_data', input_json=input_json)
+    logger.info(f"user_id:[{user_id}] Sended request to '/file_data' params:[{input_json}]")
     tele_file_id = file_json.get("tele_file_id")
     file_path = file_json.get("file_path")
     file_type = file_json.get("file_type")
@@ -248,37 +271,36 @@ def handle_send_file(call):
 
 
 @BOT.callback_query_handler(func=lambda call: call.data.startswith("Send group:"))
+@handle_errors
 def handle_send_group(call):
-    try:
-        BOT.answer_callback_query(call.id)
-        media_group_id = call.data.split(":")[1]
-        user_id = call.from_user.id
+    BOT.answer_callback_query(call.id)
+    media_group_id = call.data.split(":")[1]
+    user_id = call.from_user.id
 
-        group_files, status = create_request('/group_files',
-            {"user_id": user_id, "media_group_id": media_group_id})
+    group_files, status = create_request('/group_files',
+        {"user_id": user_id, "media_group_id": media_group_id})
 
-        if not group_files:
-            BOT.send_message(call.message.chat.id, "🟥 Files not found")
-            return
+    logger.info(f"user_id:[{user_id}] Sended request to '/group_files' media_group_id:[{media_group_id}]")
 
-        media = []
-        for file in group_files:
-            file_type = file.get("file_type")
-            tele_file_id = file.get("tele_file_id")
+    if not group_files:
+        logger.error(f"user_id:[{call.message.from_user.id}] Album not found")
+        BOT.send_message(call.message.chat.id, "🟥 Files not found")
+        return
 
-            if file_type == "photo":
-                media.append(telebot.types.InputMediaPhoto(tele_file_id))
+    media = []
+    for file in group_files:
+        file_type = file.get("file_type")
+        tele_file_id = file.get("tele_file_id")
 
-            elif file_type == "video":
-                media.append(telebot.types.InputMediaVideo(tele_file_id))
+        if file_type == "photo":
+            media.append(telebot.types.InputMediaPhoto(tele_file_id))
 
-        BOT.send_media_group(call.message.chat.id, media)
+        elif file_type == "video":
+            media.append(telebot.types.InputMediaVideo(tele_file_id))
 
-    except ConnectionError:
-        BOT.send_message(call.message.chat.id, "🟥 Service is temporarily unavailable, try again later")
-    except Exception as e:
-        BOT.send_message(call.message.chat.id, "🟥 Something went wrong, try again later")
-        raise e
+    logger.info(f"user_id:[{call.message.from_user.id}] Received media_group_id:[{media_group_id}]")
+    BOT.send_media_group(call.message.chat.id, media)
+
 
 
 @BOT.callback_query_handler(func=lambda call: call.data.startswith("month_dir_delete:"))
@@ -302,6 +324,7 @@ def handle_date_dir_delete(call):
     user_id = call.from_user.id
     input_json = {"user_id": user_id, "date_dir": date_dir}
     date_dir_files_list, status = create_request(endpoint='/date_dir_files', input_json=input_json)
+    logger.info(f"user_id:[{user_id}] Sended request to '/date_dir_files' params:[{input_json}]")
     inline = delete_inline_buttons(date_dir_files_list)
     BOT.send_message(
         call.message.chat.id,
@@ -334,29 +357,28 @@ def handle_delete_group_confirm(call):
             "Are you sure you want to delete this album?",
             reply_markup=delete_keyboard
         )
-    except Exception as e:
+
+    except Exception:
+        logger.error(f"user_id:[{call.message.from_user.id} Unexpected error", exc_info=True)
         BOT.send_message(call.message.chat.id, "🟥 Something went wrong, try again later")
-        raise e
 
 
 @BOT.callback_query_handler(func=lambda call: call.data.startswith("ConfirmDeleteGroup:"))
+@handle_errors
 def handle_confirm_delete_group(call):
-    try:
-        BOT.answer_callback_query(call.id)
-        media_group_id = call.data.split(":")[1]
-        user_id = call.from_user.id
-        status = create_request('/delete_group', {"user_id": user_id, "media_group_id": media_group_id})
+    BOT.answer_callback_query(call.id)
+    media_group_id = call.data.split(":")[1]
+    user_id = call.from_user.id
+    status = create_request('/delete_group', {"user_id": user_id, "media_group_id": media_group_id})
+    logger.info(f"user_id:[{user_id}] Sended request to '/date_dir_files' media_group_id:[{media_group_id}]")
 
-        if status == 204:
-            BOT.send_message(call.message.chat.id, "✅ Album deleted successfully")
-        else:
-            BOT.send_message(call.message.chat.id, "🟥 Something went wrong, try again later")
+    if status == 204:
+        logger.info(f"user_id:[{call.message.from_user.id}] Deleted Album media_group_id:[{media_group_id}]")
 
-    except ConnectionError:
-        BOT.send_message(call.message.chat.id, "🟥 Service is temporarily unavailable, try again later")
-    except Exception as e:
+        BOT.send_message(call.message.chat.id, "✅ Album deleted successfully")
+    else:
+        logger.error(f"user_id:[{call.message.from_user.id}] NotFound error")
         BOT.send_message(call.message.chat.id, "🟥 Something went wrong, try again later")
-        raise e
 
 
 @BOT.callback_query_handler(func=lambda call: call.data.startswith("ConfirmDelete:"))
@@ -366,10 +388,14 @@ def handle_confirm_delete(call):
     file_id = call.data.split(":")[1]
     user_id = call.from_user.id
     status = create_request('/delete_file', {"user_id": user_id, "file_id": file_id})
+    logger.info(f"user_id:[{user_id}] Sended request to '/delete_file' file_id:[{file_id}]")
 
     if status == 204:
+        logger.info(f"user_id:[{call.message.from_user.id}] Deleted File file_id:[{file_id}]")
         BOT.send_message(call.message.chat.id, "✅ File deleted successfully")
+
     else:
+        logger.error(f"user_id:[{call.message.from_user.id}] NotFound error")
         BOT.send_message(call.message.chat.id, "🟥 Something went wrong, try again later")
 
 
@@ -377,19 +403,22 @@ def handle_confirm_delete(call):
 def handle_cancel_delete(call):
     try:
         BOT.answer_callback_query(call.id)
+        logger.info(f"user_id:[{call.message.from_user.id}] Canceled Deletion")
         BOT.send_message(call.message.chat.id, "Deletion cancelled✅")
 
-    except Exception as e:
+    except Exception:
+        logger.error(f"user_id:[{call.message.from_user.id}] Unexpected error", exc_info=True)
         BOT.send_message(call.message.chat.id, "🟥 Something went wrong, try again later")
-        raise e
 
 
 @BOT.message_handler(func=lambda message: message.text in COMMANDS)
+@handle_errors
 def reaction_to_button(message):
     active_upload_users.discard(message.from_user.id)
     answered_groups.clear()
     try:
         if message.text == "📤 Upload":
+            logger.info(f"user_id:[{message.from_user.id}] used [{message.text}] command")
             active_upload_users.add(message.from_user.id)
             BOT.send_message(message.chat.id,
                              "❗Please note that if you send a file with a long name (more than 15 characters), its name will be truncated.")
@@ -397,6 +426,7 @@ def reaction_to_button(message):
             BOT.register_next_step_handler(message, load_data)
 
         elif message.text == "📁 My files":
+            logger.info(f"user_id:[{message.from_user.id}] used [{message.text}] command")
             months_dir_path = show_month_dirs(message.from_user.id)  #returns path to the months_dirs
             inline = inline_buttons(dir_path=months_dir_path, call_back="month_dir")
 
@@ -407,6 +437,7 @@ def reaction_to_button(message):
             )
 
         elif message.text == "🗑️ Delete":
+            logger.info(f"user_id:[{message.from_user.id}] used [{message.text}] command")
             months_dir_path = show_month_dirs(message.from_user.id)
             inline = inline_buttons(dir_path=months_dir_path, call_back="month_dir_delete")
             BOT.send_message(
@@ -417,6 +448,7 @@ def reaction_to_button(message):
 
 
         elif message.text == "Back⬇️":
+            logger.info(f"user_id:[{message.from_user.id}] used [{message.text}] command")
             BOT.send_message(
                 message.chat.id,
                 "All options⤵️",
@@ -425,6 +457,7 @@ def reaction_to_button(message):
 
 
         elif message.text == "❓ Help":
+            logger.info(f"user_id:[{message.from_user.id}] used [{message.text}] command")
 
             used_space, status = create_request('/get_quota', {"user_id": str(message.from_user.id)})
 
@@ -450,22 +483,16 @@ def reaction_to_button(message):
             )
 
     except FileNotFoundError:
+        logger.error(f"user_id:[{message.from_user.id}] No files yet", exc_info=True)
         BOT.send_message(message.chat.id,
                          "⚠️You haven't send any file yet")
         return
 
-    except ConnectionError:
-        BOT.send_message(message.chat.id, "🟥 Service is temporarily unavailable, try again later")
-        return
-
-    except Exception as e:
-        BOT.send_message(message.chat.id, "🟥 Something went wrong, try again later")
-        raise e
-
 @BOT.message_handler(func=lambda message: message.media_group_id is not None,
                      content_types=['photo', 'video'])
-
+@handle_errors
 def handle_media_group(message):
+    logger.info(f"user_id:[{message.from_user.id}] Sended content_type:[{message.content_type}] with media_group_id:[{message.media_group_id}")
     if message.from_user.id in active_upload_users:
         load_data(message)
 
@@ -477,7 +504,9 @@ def handle_media_group(message):
 
 #filtration
 @BOT.message_handler(func=lambda message: True, content_types=['text', 'photo', 'voice', 'document', 'video_note', 'audio', 'video'])
+@handle_errors
 def handle_not_supported(message):
+    logger.info(f"user_id:[{message.from_user.id}] Sended content without command")
     BOT.send_message(
         message.chat.id,
         "No such option, use one of those⤵️",

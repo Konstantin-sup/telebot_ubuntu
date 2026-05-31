@@ -8,6 +8,7 @@ from db_model.api_functions import (add_metadata, get_date_dir_files, get_file_d
                                     remove_file, get_group_files, remove_group)
 from sqlalchemy.orm import Session
 from fastapi import Depends
+from logs_config import logger
 
 app = FastAPI()
 
@@ -52,27 +53,36 @@ def get_quota(user_id: str, session: Session = Depends(get_session)):
     quota = get_user_quota(session=session, user_id=user_id)
     if quota is None:
         return JSONResponse(status_code=200, content={"used_space": 0})
+
+    logger.info(f"user_id:[{user_id} has used {quota.used_space} bytes")
     return JSONResponse(status_code=200, content={"used_space": quota.used_space})
 
 @app.patch('/update_quota')
 def update_quota(user_id: str, file_size: int, session: Session = Depends(get_session)):
     update_user_quota(user_id=user_id, file_size=file_size, session=session)
+    logger.info(f"user_id:[{user_id} has updated quota by {file_size} bytes")
     return JSONResponse(status_code=200, content={"ok": True})
 
 @app.delete('/delete_file')
 def delete_file(user_id: str, file_id: int, session: Session = Depends(get_session)):
     result = remove_file(user_id=user_id, file_id=file_id, session=session)
     if not result:
+        logger.error(f"user_id:[{user_id} file wasn't found for deletion file_id:[{file_id}]")
         return JSONResponse(status_code=404, content={"error": "file not found"})
+
+    logger.info(f"user_id:[{user_id} has deleted file_id:[{file_id}]")
     return Response(status_code=204)
+
 
 @app.get('/group_files')
 def get_group_files_endpoint(user_id: str, media_group_id: str, session: Session = Depends(get_session)):
     result = get_group_files(user_id=user_id, media_group_id=media_group_id, session=session)
 
     if result is not None:
+        logger.info(f"user_id:[{user_id} got group_id:[{media_group_id}]")
         return JSONResponse(status_code=200, content={"group_files": row_to_dict(result, long_list=True)})
 
+    logger.error(f"user_id:[{user_id} wasn't found group_id:[{media_group_id}]")
     return JSONResponse(status_code=404, content={})
 
 @app.delete('/delete_group')
@@ -80,8 +90,11 @@ def delete_group(user_id: str, media_group_id: str, session: Session = Depends(g
     result = remove_group(user_id=user_id, media_group_id=media_group_id, session=session)
 
     if not result:
+        logger.error(f"user_id:[{user_id} wasn't found group_id:[{media_group_id}]")
         return JSONResponse(status_code=404, content={"error": "group not found"})
 
+
+    logger.info(f"user_id:[{user_id} deleted group_id:[{media_group_id}]")
     return Response(status_code=204)
 #uvicorn fastapi_db.main_api:app --reload
 
