@@ -11,4 +11,4 @@ DATA
 
 alembic.ini
 
-bot_logs
+bot.logs
