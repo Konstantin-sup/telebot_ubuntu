@@ -60,14 +60,30 @@ def inline_buttons(dir_path: str, call_back: str):
 
 def send_inline_buttons(dict_files: list[dict]):
     keyboard = types.InlineKeyboardMarkup()
+    seen_groups = set()
+
     for data in dict_files:
         f_name = data.get("file_name")
         f_id = data.get("file_id")
-        call_back = f"Send me:{f_id}"
-        keyboard.add(types.InlineKeyboardButton(f"Send me:📄 {f_name}", callback_data=call_back))
+        media_group_id = data.get("media_group_id")
+        media_group_name = data.get("media_group_name")
+
+        if media_group_id:
+            if media_group_id in seen_groups:  #1 group 1 name
+                continue
+            seen_groups.add(media_group_id)
+            keyboard.add(types.InlineKeyboardButton(
+                f"📸 {media_group_name}",
+                callback_data=f"Send group:{media_group_id}"
+            ))
+
+        else:
+            keyboard.add(types.InlineKeyboardButton(
+                f"Send me:📄 {f_name}",
+                callback_data=f"Send me:{f_id}"
+            ))
 
     return keyboard
-
 
 def delete_inline_buttons(dict_files: list[dict]):
     keyboard = types.InlineKeyboardMarkup()

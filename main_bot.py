@@ -1,8 +1,6 @@
 import os
 from dotenv import load_dotenv
 import telebot
-from sqlalchemy.util.queue import Empty
-
 from main_bot_package.telebot_functions import (create_keyboard_panel, inline_buttons,
                                                 send_inline_buttons, text_file_send_keyboard, delete_inline_buttons, del_file_check_keyboard)
 from main_bot_package.file_date_functions import save_file, show_month_dirs, create_month_path, return_file_as, create_f_name
@@ -251,6 +249,40 @@ def handle_send_file(call):
 
     if file_type in send_methods:
         send_methods[file_type]()
+
+
+@BOT.callback_query_handler(func=lambda call: call.data.startswith("Send group:"))
+def handle_send_group(call):
+    try:
+        BOT.answer_callback_query(call.id)
+        media_group_id = call.data.split(":")[1]
+        user_id = call.from_user.id
+
+        group_files, status = create_request('/group_files',
+            {"user_id": user_id, "media_group_id": media_group_id})
+
+        if not group_files:
+            BOT.send_message(call.message.chat.id, "🟥 Files not found")
+            return
+
+        media = []
+        for file in group_files:
+            file_type = file.get("file_type")
+            tele_file_id = file.get("tele_file_id")
+
+            if file_type == "photo":
+                media.append(telebot.types.InputMediaPhoto(tele_file_id))
+
+            elif file_type == "video":
+                media.append(telebot.types.InputMediaVideo(tele_file_id))
+
+        BOT.send_media_group(call.message.chat.id, media)
+
+    except ConnectionError:
+        BOT.send_message(call.message.chat.id, "🟥 Service is temporarily unavailable, try again later")
+    except Exception as e:
+        BOT.send_message(call.message.chat.id, "🟥 Something went wrong, try again later")
+        raise e
 
 
 @BOT.callback_query_handler(func=lambda call: call.data.startswith("month_dir_delete:"))
