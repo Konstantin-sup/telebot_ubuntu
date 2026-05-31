@@ -2,7 +2,9 @@ import os
 from dotenv import load_dotenv
 import telebot
 from main_bot_package.telebot_functions import (create_keyboard_panel, inline_buttons,
-                                                send_inline_buttons, text_file_send_keyboard, delete_inline_buttons, del_file_check_keyboard)
+                                                send_inline_buttons, text_file_send_keyboard,
+                                                delete_inline_buttons, del_file_check_keyboard, del_group_check_keyboard)
+
 from main_bot_package.file_date_functions import save_file, show_month_dirs, create_month_path, return_file_as, create_f_name
 from db_model.api_functions import create_request
 
@@ -58,6 +60,10 @@ def load_content_type(content_type, str_cont_type: str, user_id: str, chat_id: s
     except ConnectionError:
         BOT.send_message(chat_id, "🟥 Service is temporarily unavailable, try again later")
         return
+
+    except Exception as e:
+        BOT.send_message(chat_id, "🟥 Sorry something went wrong, try again later")
+        raise e  # will be replaced
 
     if file_name.startswith("album"):  #could also return media_group_name if not none
         BOT.send_message(chat_id, f"Saved✅ as part of '{file_name}'")
@@ -118,6 +124,8 @@ def load_data(message):
             BOT.send_message(message.chat.id, "Got it, may take a lil time⌛ to save it, please wait")
 
             media_group_id = message.media_group_id
+            media_group_name = None
+
             if media_group_id:
                 media_group_name = f"album_{media_group_id[-5:]}"
 
@@ -327,6 +335,41 @@ def handle_delete_confirm(call):
         reply_markup=delete_keyboard
     )
 
+@BOT.callback_query_handler(func=lambda call: call.data.startswith("Delete group:"))
+def handle_delete_group_confirm(call):
+    try:
+        BOT.answer_callback_query(call.id)
+        media_group_id = call.data.split(":")[1]
+        delete_keyboard = del_group_check_keyboard(media_group_id=media_group_id)
+        BOT.send_message(
+            call.message.chat.id,
+            "Are you sure you want to delete this album?",
+            reply_markup=delete_keyboard
+        )
+    except Exception as e:
+        BOT.send_message(call.message.chat.id, "🟥 Something went wrong, try again later")
+        raise e
+
+
+@BOT.callback_query_handler(func=lambda call: call.data.startswith("ConfirmDeleteGroup:"))
+def handle_confirm_delete_group(call):
+    try:
+        BOT.answer_callback_query(call.id)
+        media_group_id = call.data.split(":")[1]
+        user_id = call.from_user.id
+        status = create_request('/delete_group', {"user_id": user_id, "media_group_id": media_group_id})
+
+        if status == 204:
+            BOT.send_message(call.message.chat.id, "✅ Album deleted successfully")
+        else:
+            BOT.send_message(call.message.chat.id, "🟥 Something went wrong, try again later")
+
+    except ConnectionError:
+        BOT.send_message(call.message.chat.id, "🟥 Service is temporarily unavailable, try again later")
+    except Exception as e:
+        BOT.send_message(call.message.chat.id, "🟥 Something went wrong, try again later")
+        raise e
+
 
 @BOT.callback_query_handler(func=lambda call: call.data.startswith("ConfirmDelete:"))
 @handle_errors
@@ -445,7 +488,7 @@ def handle_media_group(message):
 
 
 #filtration
-@BOT.message_handler(func=lambda message: True, content_types=['text', 'photo', 'voice', 'document', 'video_note', 'audio'])
+@BOT.message_handler(func=lambda message: True, content_types=['text', 'photo', 'voice', 'document', 'video_note', 'audio', 'video'])
 def handle_not_supported(message):
     BOT.send_message(
         message.chat.id,

@@ -62,6 +62,10 @@ def create_request(endpoint: str, input_json=dict | None):
             response = requests.get(f"http://127.0.0.1:8000{endpoint}", params=input_json)
             return response.json().get("group_files"), response.status_code
 
+        elif endpoint == '/delete_group':
+            response = requests.delete(f"http://127.0.0.1:8000{endpoint}", params=input_json)
+            return response.status_code
+
     except requests.exceptions.ConnectionError:
         raise ConnectionError("FastAPI is unavailable")
 
@@ -148,3 +152,34 @@ def get_group_files(user_id: str, media_group_id: str, session):
         )
     ).scalars().all()
 
+def remove_group(user_id: str, media_group_id: str, session):
+    files = get_group_files(user_id=user_id, media_group_id=media_group_id, session=session)
+
+    if not files:
+        return None
+
+    total_size = sum(file.file_size for file in files)
+    file_paths = [file.file_path for file in files]
+
+    update_user_quota(user_id=user_id, file_size=-total_size, session=session)
+
+    for file in files:
+        session.delete(file)
+    session.commit()
+
+    for file_path in file_paths:
+        if os.path.exists(file_path):
+            date_dir = os.path.dirname(file_path)
+            month_dir = os.path.dirname(date_dir)
+            year_dir = os.path.dirname(month_dir)
+
+            os.remove(file_path)
+
+            if len(os.listdir(date_dir)) == 0:
+                os.rmdir(date_dir)
+            if len(os.listdir(month_dir)) == 0:
+                os.rmdir(month_dir)
+            if len(os.listdir(year_dir)) == 0:
+                os.rmdir(year_dir)
+
+    return True

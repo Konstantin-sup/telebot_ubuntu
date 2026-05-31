@@ -28,6 +28,14 @@ def del_file_check_keyboard(file_id: str):
 
     return keyboard
 
+def del_group_check_keyboard(media_group_id: str):
+    keyboard = types.InlineKeyboardMarkup()
+    keyboard.add(
+        types.InlineKeyboardButton("✅ Yes", callback_data=f"ConfirmDeleteGroup:{media_group_id}"),
+        types.InlineKeyboardButton("❌ No", callback_data="CancelDelete")
+    )
+    return keyboard
+
 def text_file_send_keyboard():
     text_file_markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     as_text = types.KeyboardButton("As text")
@@ -87,10 +95,26 @@ def send_inline_buttons(dict_files: list[dict]):
 
 def delete_inline_buttons(dict_files: list[dict]):
     keyboard = types.InlineKeyboardMarkup()
+    seen_groups = set()
+
     for data in dict_files:
         f_name = data.get("file_name")
         f_id = data.get("file_id")
-        call_back = f"Delete:{f_id}"
-        keyboard.add(types.InlineKeyboardButton(f"🗑️ {f_name}", callback_data=call_back))
+        media_group_id = data.get("media_group_id")
+        media_group_name = data.get("media_group_name")
+
+        if media_group_id:
+            if media_group_id in seen_groups:
+                continue
+            seen_groups.add(media_group_id)
+            keyboard.add(types.InlineKeyboardButton(
+                f"🗑️ 📸 {media_group_name}",
+                callback_data=f"Delete group:{media_group_id}"
+            ))
+        else:
+            keyboard.add(types.InlineKeyboardButton(
+                f"🗑️ {f_name}",
+                callback_data=f"Delete:{f_id}"
+            ))
 
     return keyboard

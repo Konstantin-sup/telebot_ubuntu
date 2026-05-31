@@ -4,7 +4,8 @@ from pydantic import BaseModel
 from db_model.engine_session import SessionLocal
 from starlette.responses import Response
 from db_model.api_functions import (add_metadata, get_date_dir_files, get_file_data,
-                                    row_to_dict, get_user_quota, update_user_quota, remove_file, get_group_files)
+                                    row_to_dict, get_user_quota, update_user_quota,
+                                    remove_file, get_group_files, remove_group)
 from sqlalchemy.orm import Session
 from fastapi import Depends
 
@@ -74,6 +75,14 @@ def get_group_files_endpoint(user_id: str, media_group_id: str, session: Session
 
     return JSONResponse(status_code=404, content={})
 
+@app.delete('/delete_group')
+def delete_group(user_id: str, media_group_id: str, session: Session = Depends(get_session)):
+    result = remove_group(user_id=user_id, media_group_id=media_group_id, session=session)
+
+    if not result:
+        return JSONResponse(status_code=404, content={"error": "group not found"})
+
+    return Response(status_code=204)
 #uvicorn fastapi_db.main_api:app --reload
 
 #curl "http://localhost:8000/file_data?user_id="5304343110"&file_id=21
