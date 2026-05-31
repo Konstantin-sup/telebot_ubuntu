@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from db_model.engine_session import SessionLocal
 from starlette.responses import Response
 from db_model.api_functions import (add_metadata, get_date_dir_files, get_file_data,
-                                    row_to_dict, get_user_quota, update_user_quota, remove_file)
+                                    row_to_dict, get_user_quota, update_user_quota, remove_file, get_group_files)
 from sqlalchemy.orm import Session
 from fastapi import Depends
 
@@ -19,6 +19,8 @@ class Metadata(BaseModel):
     date_dir: str
     file_size: int
     file_type: str
+    media_group_id: str | None = None
+    media_group_name: str | None = None
 
 
 def get_session():
@@ -62,6 +64,15 @@ def delete_file(user_id: str, file_id: int, session: Session = Depends(get_sessi
     if not result:
         return JSONResponse(status_code=404, content={"error": "file not found"})
     return Response(status_code=204)
+
+@app.get('/group_files')
+def get_group_files_endpoint(user_id: str, media_group_id: str, session: Session = Depends(get_session)):
+    result = get_group_files(user_id=user_id, media_group_id=media_group_id, session=session)
+
+    if result is not None:
+        return JSONResponse(status_code=200, content={"group_files": row_to_dict(result, long_list=True)})
+
+    return JSONResponse(status_code=404, content={})
 
 #uvicorn fastapi_db.main_api:app --reload
 

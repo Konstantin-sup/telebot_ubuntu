@@ -87,7 +87,9 @@ def write_file(file_path, content, mode="w", encoding=None):
     with open(file_path, mode, encoding=encoding) as f_object:
         f_object.write(content)
 
-def create_metadata(user_id: str, file_type: str, file_path: str, month_dir: str, file_name: str, date_dir: str, file_size: int,  tele_file_id= str|None):
+def create_metadata(user_id: str, file_type: str, file_path: str, month_dir: str,
+                    file_name: str, date_dir: str, file_size: int,
+                    tele_file_id=str|None, media_group_id=str|None, media_group_name=str|None):
     return {
         "user_id": user_id,
         "file_path": file_path,
@@ -96,10 +98,13 @@ def create_metadata(user_id: str, file_type: str, file_path: str, month_dir: str
         "tele_file_id": tele_file_id,
         "date_dir": date_dir,
         "file_size": file_size,
-        "file_type": file_type
+        "file_type": file_type,
+        "media_group_id": media_group_id,
+        "media_group_name": media_group_name
     }
 
-def save_file(us_id, file_type: str, text=None, file_bytes=None, bytes_file_name=None, tele_file_id=None):
+def save_file(us_id, file_type: str, text=None, file_bytes=None,
+              bytes_file_name=None, tele_file_id=None, media_group_id=None, media_group_name=None):
     try:
         create_request('/health', {})
 
@@ -132,11 +137,16 @@ def save_file(us_id, file_type: str, text=None, file_bytes=None, bytes_file_name
             tele_file_id=tele_file_id,
             date_dir=time.get("dir"),
             file_size=file_size,
-            file_type=file_type
+            file_type=file_type,
+            media_group_id=media_group_id,
+            media_group_name=media_group_name
         )
 
         create_request('/load_metadata', input_json=meta_json)
         create_request('/update_quota', input_json={"user_id": str(us_id), "file_size": file_size})
+
+        if media_group_name is not None:
+            return media_group_name
 
         return file_name
 

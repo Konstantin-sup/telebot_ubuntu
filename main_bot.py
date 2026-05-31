@@ -40,7 +40,9 @@ def upload_file_types(message, us_content_type):
 
     return f_types.get(us_content_type)
 
-def load_content_type(content_type, str_cont_type: str, user_id: str, chat_id: str):
+def load_content_type(content_type, str_cont_type: str, user_id: str, chat_id: str,
+                      media_group_id: str|None, media_group_name: str|None):
+
     file_id = content_type.file_id
     file_info = BOT.get_file(file_id)
     downloaded_bytes = BOT.download_file(file_info.file_path)
@@ -53,12 +55,15 @@ def load_content_type(content_type, str_cont_type: str, user_id: str, chat_id: s
 
     try:
         file_name = save_file(user_id, tele_file_id=file_id, file_bytes=downloaded_bytes,
-                            bytes_file_name=fl_name, file_type=str_cont_type)
+                            bytes_file_name=fl_name, file_type=str_cont_type, media_group_name=media_group_name, media_group_id=media_group_id)
 
     except ConnectionError:
         BOT.send_message(chat_id, "🟥 Service is temporarily unavailable, try again later")
         return
 
+    if file_name.startswith("album"):  #could also return media_group_name if not none
+        BOT.send_message(chat_id, f"Saved✅ as part of '{file_name}'")
+        return
 
     BOT.send_message(chat_id, f"{str_cont_type.capitalize()} was saved successfully✅ as '{file_name}'")
 
@@ -66,10 +71,6 @@ def load_content_type(content_type, str_cont_type: str, user_id: str, chat_id: s
 def load_data(message):
     if message.text in COMMANDS:
         reaction_to_button(message)
-        return
-
-    if message.media_group_id is not None:
-        BOT.send_message(message.chat.id, f"Its {message.content_type}")
         return
 
     try:
@@ -101,11 +102,29 @@ def load_data(message):
                 return
 
             if used_space + file_size > 250 * 1024 * 1024:  #cheking if there place for the next fl
-                full_storage(message_chat_id=message.chat.id, used_space=used_space)
+                if message.media_group_id:
+                    group_files, status = create_request('/group_files',
+                                                         {"user_id": str(us_id),
+                                                          "media_group_id": message.media_group_id})
+                    if group_files:
+                        group_name = group_files[0].get("media_group_name")
+                        BOT.send_message(chat_id,
+                                         f"⚠️ Not enough space\n"
+                                         f"Partially saved as '{group_name}'\n"
+                                         f"Delete files to free up space")
+                        return
+
+                full_storage(message_chat_id=chat_id, used_space=used_space)
                 return
 
             BOT.send_message(message.chat.id, "Got it, may take a lil time⌛ to save it, please wait")
-            load_content_type(file_type, str_cont_type=user_content_type, user_id=us_id, chat_id=chat_id)
+
+            media_group_id = message.media_group_id
+            if media_group_id:
+                media_group_name = f"album_{media_group_id[-5:]}"
+
+            load_content_type(file_type, str_cont_type=user_content_type, user_id=us_id,
+                              chat_id=chat_id, media_group_id=media_group_id, media_group_name=media_group_name)
 
     except TypeError as e:
         BOT.send_message(message.chat.id, "🟥Unsupported Content, send something else")

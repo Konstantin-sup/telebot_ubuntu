@@ -58,6 +58,10 @@ def create_request(endpoint: str, input_json=dict | None):
             response = requests.delete(f"http://127.0.0.1:8000{endpoint}", params=input_json)
             return response.status_code
 
+        elif endpoint == '/group_files':
+            response = requests.get(f"http://127.0.0.1:8000{endpoint}", params=input_json)
+            return response.json().get("group_files"), response.status_code
+
     except requests.exceptions.ConnectionError:
         raise ConnectionError("FastAPI is unavailable")
 
@@ -66,7 +70,10 @@ def add_metadata(metadata_class, session):
     index = MainTable(user_id=metadata_class.user_id, file_path=metadata_class.file_path,
                       tele_file_id=metadata_class.tele_file_id, date_dir=metadata_class.date_dir,
                       month_dir=metadata_class.month_dir, file_name=metadata_class.file_name,
-                      file_size=metadata_class.file_size, file_type=metadata_class.file_type)
+                      file_size=metadata_class.file_size, file_type=metadata_class.file_type,
+                      media_group_id=metadata_class.media_group_id,media_group_name=metadata_class.media_group_name
+                      )
+
     session.add(index)
     session.commit()
     session.refresh(index)
@@ -131,3 +138,13 @@ def remove_file(user_id: str, file_id: int, session):
             os.rmdir(year_dir)
 
     return True
+
+def get_group_files(user_id: str, media_group_id: str, session):
+    return session.execute(
+        select(MainTable)
+        .where(
+            MainTable.user_id == user_id,
+            MainTable.media_group_id == media_group_id
+        )
+    ).scalars().all()
+
