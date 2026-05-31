@@ -6,7 +6,7 @@ def log_set_up():
         format="%(asctime)s [%(levelname)s] %(filename)s:%(lineno)d — %(message)s",
         handlers=[
             RotatingFileHandler(
-                "bot.logs",
+                "bot.log",
                 maxBytes=5 * 1024 * 1024,  #5 MB max
                 backupCount=3,
                 encoding="utf-8"
