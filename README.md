@@ -18,6 +18,7 @@ A Telegram bot for saving, browsing, and deleting your files — built with Pyth
 - **SQLAlchemy** — ORM
 - **Alembic** — database migrations
 - **MySQL** — database
+- **Docker / Docker Compose** — containerization
 - **python-dotenv** — environment config
 
 ## Project Structure
@@ -35,7 +36,11 @@ A Telegram bot for saving, browsing, and deleting your files — built with Pyth
 ├── main_bot_package/
 │   ├── telebot_functions.py     # Keyboard/button helpers
 │   └── file_date_functions.py   # File save/read/delete logic
-└── alembic/                     # DB migration history
+├── alembic/                     # DB migration history
+├── Dockerfile.bot               # Dockerfile for the bot
+├── Dockerfile.api               # Dockerfile for the API
+├── docker-compose.yml           # Orchestration
+└── .env.example                 # Environment variables template
 ```
 
 ## Database Schema
@@ -59,7 +64,72 @@ A Telegram bot for saving, browsing, and deleting your files — built with Pyth
 
 **`user_quota`** — tracks used storage per user.
 
-## Setup
+## Deploy with Docker
+
+### Requirements
+- Docker
+- Docker Compose
+
+### Steps
+
+**1. Clone the repo:**
+```bash
+git clone <repo-url>
+cd <repo>
+```
+
+**2. Create the `.env` file:**
+```bash
+cp .env.example .env
+```
+
+Fill in the values:
+```env
+# Telegram Bot
+TELEGRAM_BOT_TOKEN=your_bot_token_here
+
+# MySQL
+MYSQL_ROOT_PASSWORD=your_root_password
+MYSQL_DATABASE=filebot_db
+MYSQL_USER=filebot_user
+MYSQL_PASSWORD=your_password
+
+# Path inside the container where files will be stored
+PATH_TO_DATA=/app/data
+```
+
+**3. Create the data folder** (will be mounted into the bot container):
+```bash
+mkdir data
+```
+
+**4. Run:**
+```bash
+docker compose up --build -d
+```
+
+That's it. Docker will:
+- Start MySQL and wait until it's healthy
+- Run Alembic migrations automatically
+- Start the FastAPI server
+- Start the bot
+
+### Useful commands
+
+```bash
+# View logs
+docker compose logs -f
+
+# Stop all containers
+docker compose down
+
+# Rebuild after code changes
+docker compose up --build -d
+```
+
+---
+
+## Local Setup (without Docker)
 
 1. Clone the repo and create a virtual environment:
 ```bash
@@ -72,8 +142,9 @@ pip install -r requirements.txt
 
 2. Create a `.env` file:
 ```env
-BOT_TOKEN=your_telegram_bot_token
-DB_URL=mysql+pymysql://user:password@localhost/dbname
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+DATABASE_URL=mysql+pymysql://user:password@localhost/dbname
+API_URL=http://127.0.0.1:8000
 PATH_TO_DATA=/path/to/data/directory
 ```
 
@@ -91,6 +162,8 @@ uvicorn fastapi_db.main_api:app --reload
 ```bash
 python main_bot.py
 ```
+
+---
 
 ## File size limits
 
@@ -110,6 +183,4 @@ python main_bot.py
 | Voice | .ogg |
 | Album | group of photos/videos |
 
-## Goal
 
-Pet project to practice Python, backend architecture, REST APIs, and database design in a real-world scenario.
