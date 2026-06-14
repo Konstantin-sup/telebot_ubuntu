@@ -513,7 +513,6 @@ def handle_not_supported(message):
         reply_markup=create_keyboard_panel()
     )
 
-
-BOT.polling()
+BOT.polling(none_stop=True)
 
 

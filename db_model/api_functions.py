@@ -5,6 +5,8 @@ from sqlalchemy import select
 from datetime import datetime
 import requests
 
+API_URL = os.getenv("API_URL")
+
 def row_to_dict(row, long_list: bool) -> dict | list[dict]:  #long_list = len(long_list)>1
     if not long_list:
         return {
@@ -24,46 +26,46 @@ def row_to_dict(row, long_list: bool) -> dict | list[dict]:  #long_list = len(lo
 def create_request(endpoint: str, input_json=dict | None):
     try:
         if endpoint == "/load_metadata":
-            response = requests.post(f"http://127.0.0.1:8000{endpoint}", json=input_json)
+            response = requests.post(f"{API_URL}{endpoint}", json=input_json)
             resp_json = response.json()
             resp_status = response.status_code
             return resp_json, resp_status
 
         elif endpoint == "/health":
-            response = requests.get(f"http://127.0.0.1:8000{endpoint}")
+            response = requests.get(f"{API_URL}{endpoint}")
             resp_status = response.status_code
             return resp_status
 
         elif endpoint == '/date_dir_files':
-            response = requests.get(f"http://127.0.0.1:8000{endpoint}", params=input_json)
+            response = requests.get(f"{API_URL}{endpoint}", params=input_json)
             resp_json = response.json()
             resp_status = response.status_code
             return resp_json.get("date_dir_files"), resp_status
 
         elif endpoint == '/file_data':
-            response = requests.get(f"http://127.0.0.1:8000{endpoint}", params=input_json)
+            response = requests.get(f"{API_URL}{endpoint}", params=input_json)
             resp_json = response.json()
             resp_status = response.status_code
             return resp_json.get("file_data"), resp_status
 
         elif endpoint == '/get_quota':
-            response = requests.get(f"http://127.0.0.1:8000{endpoint}", params=input_json)
+            response = requests.get(f"{API_URL}{endpoint}", params=input_json)
             return response.json().get("used_space"), response.status_code
 
         elif endpoint == '/update_quota':
-            response = requests.patch(f"http://127.0.0.1:8000{endpoint}", params=input_json)
+            response = requests.patch(f"{API_URL}{endpoint}", params=input_json)
             return response.json(), response.status_code
 
         elif endpoint == '/delete_file':
-            response = requests.delete(f"http://127.0.0.1:8000{endpoint}", params=input_json)
+            response = requests.delete(f"{API_URL}{endpoint}", params=input_json)
             return response.status_code
 
         elif endpoint == '/group_files':
-            response = requests.get(f"http://127.0.0.1:8000{endpoint}", params=input_json)
+            response = requests.get(f"{API_URL}{endpoint}", params=input_json)
             return response.json().get("group_files"), response.status_code
 
         elif endpoint == '/delete_group':
-            response = requests.delete(f"http://127.0.0.1:8000{endpoint}", params=input_json)
+            response = requests.delete(f"{API_URL}{endpoint}", params=input_json)
             return response.status_code
 
     except requests.exceptions.ConnectionError:

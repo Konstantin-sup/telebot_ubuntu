@@ -1,0 +1,61 @@
+services:
+
+  db:
+    image: mysql:8.0
+    container_name: filebot_db
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - filebot_net
+
+  api:
+    build:
+      context: .
+      dockerfile: api.Dockerfile
+    container_name: filebot_api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - filebot_net
+
+  bot:
+    build:
+      context: .
+      dockerfile: bot.Dockerfile
+    container_name: filebot_bot
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      API_URL: http://api:8000
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - api
+    networks:
+      - filebot_net
+
+volumes:
+  mysql_data:
+
+networks:
+  filebot_net:
+    driver: bridge
