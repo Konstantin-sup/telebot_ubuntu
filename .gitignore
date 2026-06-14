@@ -9,6 +9,5 @@ __pycache__
 #dir with users file in it
 DATA
 
-alembic.ini
 
 bot.log
