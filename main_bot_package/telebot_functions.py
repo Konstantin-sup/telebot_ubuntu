@@ -2,6 +2,8 @@
 so i kep my code clean."""
 import os
 from telebot import types
+from datetime import datetime
+from main_bot_package.file_date_functions import months
 
 def create_keyboard_panel():
     """Making a keyboard, for a '/start' command,
@@ -51,7 +53,9 @@ def inline_buttons(dir_path: str, call_back: str):
 
     if call_back in ("month_dir", "month_dir_delete"):
         prefix = call_back
-        for month_dir in os.listdir(dir_path):
+        months_order = list(months.values())
+
+        for month_dir in sorted(os.listdir(dir_path), key=lambda m: months_order.index(m)):
             keyboard.add(types.InlineKeyboardButton(f"Show: 📁 {month_dir}", callback_data=f"{prefix}:{month_dir}"))
 
         return keyboard
@@ -59,9 +63,12 @@ def inline_buttons(dir_path: str, call_back: str):
     elif call_back in ("date_dir", "date_dir_delete"):
         prefix = call_back
         with os.scandir(dir_path) as entries:
-            for entry in entries:
-                if entry.is_dir():
-                    keyboard.add(types.InlineKeyboardButton(f"Show: 📁 {entry.name}", callback_data=f"{prefix}:{entry.name}"))
+            dirs = [entry.name for entry in entries if entry.is_dir()]
+
+        dirs.sort(key=lambda d: datetime.strptime(d, "%d.%m"))
+
+        for date_dir in dirs:
+            keyboard.add(types.InlineKeyboardButton(f"Show: 📁 {date_dir}", callback_data=f"{prefix}:{date_dir}"))
 
         return keyboard
 

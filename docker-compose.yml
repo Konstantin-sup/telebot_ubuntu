@@ -47,7 +47,7 @@ services:
     environment:
       API_URL: http://api:8000
     volumes:
-      - ./data:/app/data
+      - ./DATA:/app/data
     depends_on:
       - api
     networks:
